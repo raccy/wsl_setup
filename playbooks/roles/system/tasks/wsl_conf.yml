@@ -1,0 +1,78 @@
+- name: Enable/Disable systemd in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: boot
+    option: systemd
+    value: '{{ system_systemd | lower }}' # default false
+    state: '{{ system_systemd | ternary("present", "absent") }}'
+
+- name: Set hostname in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: network
+    option: hostname
+    value: '{{ system_hotname | default("") }}'
+    state: '{{ system_hotname is defined | ternary("present", "absent") }}'
+
+- name: Enable/Disable windows path in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: interop
+    option: appendWindowsPath
+    value: '{{ system_windows_path | lower }}'
+    state: '{{ system_windows_path | ternary("absent", "present") }}'
+
+- name: Enable/Disable automount in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: automount
+    option: enabled
+    value: '{{ system_mount_auto | lower }}' # default true
+    state: '{{ system_mount_auto | ternary("absent", "present") }}'
+
+- name: Enable/Disable fstab in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: automount
+    option: mountFsTab
+    value: '{{ system_mount_fstab | lower }}' # default true
+    state: '{{ system_mount_fstab | ternary("absent", "present") }}'
+
+- name: Set automount options in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: automount
+    option: options
+    value: '"{{ system_mount_options | default([]) | join(",") }}"'
+    state: >-
+      {{ system_mount_options is defined | ternary("present", "absent") }}

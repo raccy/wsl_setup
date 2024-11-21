@@ -1,0 +1,5 @@
+proxy_loopback:
+  - 127.0.0.0/8
+  - ::1
+  - localhost
+  - .lcoladomain

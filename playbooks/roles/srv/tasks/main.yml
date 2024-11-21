@@ -1,0 +1,6 @@
+- name: Task service
+  ansible.builtin.include_tasks:
+    file: service.yml
+  loop: '{{ srv_list }}'
+  loop_control:
+    loop_var: srv_service_name

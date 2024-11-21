@@ -1,0 +1,31 @@
+- name: Install language package
+  become: true
+  ansible.builtin.apt:
+    name: 'language-pack-{{ lang_package }}'
+
+- name: Create locale
+  become: true
+  community.general.locale_gen:
+    name: '{{ lang_locale }}'
+
+- name: Check localectl status
+  ansible.builtin.command:
+    cmd: localectl status
+  changed_when: false
+  register: lang_run_localectl_status
+
+- name: Run localectl set-locale
+  become: true
+  ansible.builtin.command:
+    cmd: 'localectl set-locale {{ lang_locale }}'
+  changed_when: true
+  when: >-
+    lang_run_localectl_status.stdout_lines | first
+      is not search("LANG=" ~ lang_locale)
+
+- name: Install manual packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - 'manpages-{{ lang_package }}'
+      - 'manpages-{{ lang_package }}-dev'

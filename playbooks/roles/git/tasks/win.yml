@@ -1,0 +1,35 @@
+- name: Where git
+  ansible.builtin.include_role:
+    name: win
+    tasks_from: where
+  vars:
+    win_where_name: git
+
+- name: Setting git_win_path
+  ansible.builtin.set_fact:
+    git_win_path: '{{ win_where_path }}'
+
+- name: Debug git_win_path
+  ansible.builtin.debug:
+    var: git_win_path
+  when: debug | default(false)
+
+- name: Run git config in windows
+  ansible.builtin.command:
+    argv:
+      - '{{ git_win_path }}'
+      - config
+      - --global
+      - -l
+  changed_when: false
+  register: git_win_run_git_config
+  when: git_win_path
+
+- name: Setting git_config
+  ansible.builtin.set_fact:
+    git_config: >-
+      {{ git_win_run_git_config.stdout_lines
+        | reject("match", "filter\.lfs\.[^=]*=")
+        | reject("match", "safe\.directory=")
+        | map("split", "=") | community.general.dict }}
+  when: git_win_run_git_config is defined

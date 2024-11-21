@@ -1,0 +1,29 @@
+- name: 'Setting srv_service for {{ srv_service_name }}'
+  ansible.builtin.set_fact:
+    srv_service: '{{ srv_services[srv_service_name] }}'
+
+# TODO: パッケージの種類を選べるようにしたい。
+- name: 'Install packages for {{ srv_service_name }}'
+  become: true
+  ansible.builtin.apt:
+    name: '{{ srv_service.package[item] }}'
+  loop:
+    - common
+
+# TODO: 有効にするか選べるようにしたい。
+- name: 'Stop and disable service for {{ srv_service_name }}'
+  become: true
+  ansible.builtin.systemd_service:
+    name: '{{ srv_service.service }}'
+    enabled: false
+    state: stopped
+  when: srv_service.service is defined
+
+- name: 'Install lang packages for {{ srv_service_name }}'
+  become: true
+  ansible.builtin.apt:
+    name: '{{ srv_service.lang[itme] }}'
+  loop: '{{ srv_langs }}'
+  when:
+    - srn_service.lang is defined
+    - srv_service.lang[itme] is defiend

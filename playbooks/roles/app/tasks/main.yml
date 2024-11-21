@@ -1,0 +1,6 @@
+- name: Install packages
+  become: true
+  ansible.builtin.apt:
+    name: '{{ item }}'
+    install_recommends: '{{ item not in app_no_install_recommends }}'
+  loop: '{{ app_list }}'

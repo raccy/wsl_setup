@@ -1,0 +1,10 @@
+system_systemd: true
+# system_hostname: default value is windows hostname
+system_windows_path: false
+system_mount_auto: true
+system_mount_fstab: true
+# system_mount_drives:
+#   - c
+#   - z
+# system_mount_options:
+#   - metadata

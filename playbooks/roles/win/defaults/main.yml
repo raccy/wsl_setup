@@ -1,0 +1,5 @@
+win_system_drive: /mnt/c
+win_system_root: '{{ win_system_drive }}/Windows'
+win_system_bin: '{{ win_system_root }}/System32'
+win_program_files: '{{ win_system_drive }}/Program Files'
+win_program_files_x86: '{{ win_system_drive }}/Program Files (x86)'

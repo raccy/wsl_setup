@@ -1,0 +1,5 @@
+- name: Playbook for root
+  hosts: localhost
+  roles:
+    - system
+    - user

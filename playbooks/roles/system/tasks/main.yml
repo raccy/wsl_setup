@@ -1,0 +1,12 @@
+- name: Task wsl_conf
+  ansible.builtin.import_tasks:
+    file: wsl_conf.yml
+
+- name: Task fstab
+  ansible.builtin.import_tasks:
+    file: fstab.yml
+
+- name: Task proxy
+  ansible.builtin.include_tasks:
+    file: proxy.yml
+  when: proxy_env

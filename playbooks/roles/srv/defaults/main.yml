@@ -1,0 +1,13 @@
+srv_list: []
+  # - apache
+  # - nginx
+  # - mariadb
+  # - mysql
+  # - postgresql
+  # - redis
+  # - sqlite
+srv_langs: []
+  # - nodejs
+  # - php
+  # - python
+  # - ruby

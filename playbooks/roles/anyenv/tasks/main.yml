@@ -1,0 +1,42 @@
+- name: Git clone anyenv
+  ansible.builtin.git:
+    repo: https://github.com/anyenv/anyenv
+    dest: ~/.anyenv
+  environment: '{{ proxy_env }}'
+
+- name: Block anyenv in bashrc
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK anyenv'
+    block: |
+      if ! [[ "$PATH" =~ "$HOME/.anyenv/bin:" ]]
+      then
+          export PATH="$HOME/.anyenv/bin:$PATH"
+      fi
+      eval "$(anyenv init -)"
+
+- name: Make anyenv plugins directory
+  ansible.builtin.file:
+    path: ~/.anyenv/plugins
+    state: directory
+    mode: '0755'
+  when: anyenv_update
+
+- name: Git clone anyenv-update
+  ansible.builtin.git:
+    repo: https://github.com/znz/anyenv-update.git
+    dest: ~/.anyenv/plugins/anyenv-update
+  environment: '{{ proxy_env }}'
+  when: anyenv_update
+
+- name: Install packages for pyenv
+  become: true
+  ansible.builtin.apt:
+    name: '{{ anyenv_pyenv_packages }}'
+  when: '"pyenv" in anyenv_envs'
+
+- name: Install packages for rbenv
+  become: true
+  ansible.builtin.apt:
+    name: '{{ anyenv_rbenv_packages }}'
+  when: '"rbenv" in anyenv_envs'

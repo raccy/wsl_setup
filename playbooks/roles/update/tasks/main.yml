@@ -1,0 +1,8 @@
+- name: Update all packages
+  become: true
+  ansible.builtin.apt:
+    name: '{{ update_target }}'
+    state: latest
+    update_cache: '{{ update_update_cache }}'
+    only_upgrade: '{{ update_only_upgrade }}'
+    autoremove: '{{ update_autoremove }}'

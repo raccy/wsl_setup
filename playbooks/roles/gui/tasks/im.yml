@@ -1,0 +1,30 @@
+- name: Install IM package
+  become: true
+  ansible.builtin.apt:
+    name: '{{ gui_imf }}-{{ gui_ime }}'
+
+- name: Block im in bashrc for fcitx or fcitx5
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK im'
+    block: |
+      export GTK_IM_MODULE=fcitx
+      export QT_IM_MODULE=fcitx
+      export XMODIFIERS="@im=fcitx"
+      export DefaultIMModule=fcitx
+      if [ $SHLVL = 1 ]; then
+        (fcitx-autostart &>/dev/null &)
+        xset -r 49 &>/dev/null
+      fi
+  when: gui_imf in ["fcitx", "fcitx5"]
+
+- name: Block im in bashrc for other
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK im'
+    block: |
+      export GTK_IM_MODULE={{ gui_imf }}
+      export QT_IM_MODULE={{ gui_imf }}
+      export XMODIFIERS="@im={{ gui_imf }}"
+      export DefaultIMModule={{ gui_imf }}
+  when: gui_imf not in ["fcitx", "fcitx5"]

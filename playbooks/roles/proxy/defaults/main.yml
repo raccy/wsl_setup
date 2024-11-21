@@ -1,0 +1,9 @@
+# proxy_env: {}
+# or
+# proxy_http: http://proxy:3128
+# proxy_https: http://proxy:3128
+# proxy_ftp: http://proxy:3128
+# proxy_no: '192.168.0.0/16,.local,169.254/16'
+proxy_bypass_loopback: true
+proxy_bypass_list: []
+proxy_use_ftp: false # effected when use win_proxy only

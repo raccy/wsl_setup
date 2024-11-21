@@ -1,0 +1,4 @@
+update_target: '*'
+update_update_cache: true
+update_only_upgrade: true
+update_autoremove: true

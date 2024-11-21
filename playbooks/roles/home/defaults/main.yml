@@ -1,0 +1,6 @@
+# home_symlinks:
+#   - {src: /mnt/z, dest: ~/z}
+home_login_message: true
+home_bin_path: true
+home_npm: false
+home_gem: false

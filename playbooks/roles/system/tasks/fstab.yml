@@ -1,0 +1,26 @@
+- name: Make drive mount point diretory
+  become: true
+  ansible.builtin.file:
+    path: '/mnt/{{ item | lower }}'
+    state: directory
+    mode: '0777' # all
+  loop: '{{ system_mount_drives }}'
+  when: system_mount_drives is defined
+
+# TODO: not delete
+- name: Add drive mount in /etc/fstab
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    owner: root
+    mode: '0644'
+    regexp: '^{{ item | upper }}:\\\s'
+    line: >-
+      {{ item | upper }}:\ /mnt/{{ item | lower }} drvfs {{
+        (["noatime",
+          "uid=" ~ user_default_user.uid,
+          "gid=" ~ user_default_group.gid] + system_mount_options)
+        | unique | join(",")
+      }} 0 0
+  loop: '{{ system_mount_drives }}'
+  when: system_mount_drives is defined

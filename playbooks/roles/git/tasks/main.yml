@@ -1,0 +1,28 @@
+- name: Install git package
+  become: true
+  ansible.builtin.apt:
+    name: git
+
+- name: Install git-lfs package
+  become: true
+  ansible.builtin.apt:
+    name: git-lfs
+  when: git_lfs
+
+- name: Task win
+  ansible.builtin.include_tasks:
+    file: win.yml
+  when: git_config is not defined
+
+- name: Debug git_config
+  ansible.builtin.debug:
+    var: git_config
+  when: debug | default(false)
+
+- name: Set git config
+  community.general.git_config:
+    scope: global
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+  loop: '{{ git_config | dict2items }}'
+  when: git_config is defined

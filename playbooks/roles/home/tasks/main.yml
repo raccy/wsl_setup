@@ -1,0 +1,38 @@
+- name: Make symlink
+  ansible.builtin.file:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    state: link
+  loop: '{{ home_symlinks }}'
+  when: home_symlinks is defined
+
+- name: Create .hushlogin file
+  ansible.builtin.file:
+    path: ~/.hushlogin
+    state: '{{ home_login_message | ternary("absent", "touch") }}'
+    mode: '0644'
+
+- name: Block bin in bashrc
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK bin'
+    block: |
+      if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]
+      then
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+      fi
+  when: home_bin_path
+
+- name: Set npm config prefix
+  ansible.builtin.command:
+    cmd: npm config set prefix=~/.local
+  changed_when: true
+  when: home_npm
+
+- name: Block ruby in bashrc
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK ruby'
+    block: |
+      export GEM_HOME="$HOME/.local"
+  when: home_gem

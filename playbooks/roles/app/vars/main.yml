@@ -1,0 +1,3 @@
+app_no_install_recommends:
+  # emcas-bin-common の推奨の mailutils が postfix を求めて config でエラー
+  - emacs

@@ -1,0 +1,23 @@
+- name: Playbook
+  hosts: localhost
+  roles:
+    - role: update
+      when: update
+    - role: lang
+      when: lang
+    - role: font
+      when: font
+    - role: app
+      when: app
+    - role: srv
+      when: srv
+    - role: gui
+      when: gui
+    - role: git
+      when: git
+    - role: vscode
+      when: vscode
+    - role: anyenv
+      when: anyenv
+    - role: home
+      when: home

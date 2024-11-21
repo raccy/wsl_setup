@@ -1,0 +1,6 @@
+git_lfs: true
+# git_config:
+#   user.name: your name
+#   user.email: account@exmaple.com
+#   pull.rebase: false
+#   init.defaultbranch: main

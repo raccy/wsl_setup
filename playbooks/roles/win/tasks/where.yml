@@ -1,0 +1,23 @@
+- name: Run where in windows
+  ansible.builtin.shell:
+    cmd: '{{ win_system_bin }}/where.exe {{ win_where_name }} 2>/dev/null'
+  changed_when: false
+  ignore_errors: true
+  register: win_run_where
+
+- name: Run wslpath -u
+  ansible.builtin.command:
+    argv:
+      - wslpath
+      - -u
+      - --
+      - '{{ win_run_where.stdout_lines | first }}'
+  changed_when: false
+  register: win_run_wslpath
+  when: win_run_where.rc == 0
+
+- name: Setting win_where_path
+  ansible.builtin.set_fact:
+    win_where_path: >-
+      {{ (win_run_where.rc == 0)
+        | ternary(win_run_wslpath.stdout, "") }}

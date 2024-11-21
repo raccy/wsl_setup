@@ -1,0 +1,42 @@
+- name: Get Windows environment vars
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      {{ win_system_bin }}/cmd.exe /U /C SET | iconv -f UTF-16LE -t UTF-8
+    executable: /bin/bash
+  changed_when: false
+  register: win_run_cmd_set
+
+- name: Setting win_env var
+  ansible.builtin.set_fact:
+    win_env: >-
+      {{ win_run_cmd_set.stdout_lines | map("split", "=")
+        | community.general.dict }}
+
+- name: Debug win_env
+  ansible.builtin.debug:
+    var: win_env
+  when: debug | default(false)
+
+- name: Run netsh in windows
+  ansible.builtin.command:
+    argv:
+      - '{{ win_system_bin }}/netsh.exe'
+      - winhttp
+      - show
+      - advproxy
+  changed_when: false
+  register: win_run_netsh_winhttp_show_advproxy
+
+- name: Setting win_proxy var
+  ansible.builtin.set_fact:
+    win_proxy: >-
+      {{ win_run_netsh_winhttp_show_advproxy.stdout
+        | regex_replace("^[^{]*{", "{")
+        | from_json
+      }}
+
+- name: Debug win_proxy
+  ansible.builtin.debug:
+    var: win_proxy
+  when: debug | default(false)

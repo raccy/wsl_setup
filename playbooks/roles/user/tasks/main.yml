@@ -1,0 +1,38 @@
+- name: Add group
+  become: true
+  ansible.builtin.group:
+    name: '{{ user_group }}'
+  register: user_default_group
+
+- name: Add user
+  become: true
+  ansible.builtin.user:
+    name: '{{ user_name }}'
+    password: '{{ user_password | default(omit) }}'
+    group: '{{ user_group }}'
+    groups: '{{ user_groups }}'
+    shell: '{{ user_shell | default(omit) }}'
+    home: '{{ user_home | default(omit) }}'
+    comment: '{{ user_comment | default(omit) }}'
+  register: user_default_user
+
+- name: Set default user in wsl.conf
+  become: true
+  community.general.ini_file:
+    path: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: '0644'
+    exclusive: false
+    section: user
+    option: default
+    value: '{{ user_name }}'
+
+- name: Allow the default user to run sudo all without password
+  become: true
+  community.general.sudoers:
+    name: 10-allow-default-user
+    user: '{{ user_name }}'
+    runas: ALL
+    commands: ALL
+    state: '{{ user_sudo_without_password | ternary("present", "absent") }}'

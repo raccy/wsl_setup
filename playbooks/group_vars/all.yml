@@ -1,0 +1,13 @@
+debug: false
+# general (default: true)
+update: true
+lang: true
+font: true
+# additional (default: false)
+app: false
+srv: false
+gui: false
+git: false
+vscode: false
+anyenv: false
+home: false

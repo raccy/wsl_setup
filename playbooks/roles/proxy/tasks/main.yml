@@ -1,0 +1,63 @@
+- name: Setting proxy_env var from proxy_*
+  ansible.builtin.set_fact:
+    proxy_env:
+      http_proxy: '{{ proxy_http | default(omit) }}'
+      https_proxy: '{{ proxy_https | default(omit) }}'
+      ftp_proxy: '{{ proxy_ftp | default(omit) }}'
+      no_proxy: >-
+        {{ proxy_no | default((
+          proxy_bypass_loopback | ternary(proxy_loopback, []) +
+          proxy_bypass_list) | unique | join(",")) }}
+  when:
+    - proxy_env is not defined
+    - proxy_http is defined or proxy_https is defined
+
+- name: Setting proxy_env var from win_env
+  ansible.builtin.set_fact:
+    proxy_env:
+      http_proxy: '{{ win_env.http_proxy | default(omit) }}'
+      https_proxy: '{{ win_env.https_proxy | default(omit) }}'
+      ftp_proxy: '{{ win_env.ftp_proxy | default(omit) }}'
+      no_proxy: '{{ win_env.no_proxy | default(omit) }}'
+  when:
+    - proxy_env is not defined
+    - win_env.http_proxy is defined or win_env.https_proxy is defined
+
+- name: Setting proxy_url_from_win_proxy
+  ansible.builtin.set_fact:
+    proxy_url_from_win_proxy: >-
+      {{ win_proxy.Proxy is match("https+://")
+        | ternary(win_proxy.Proxy, "http://" ~ win_proxy.Proxy) }}
+  when: win_proxy.Proxy is defined
+
+- name: Setting proxy_env var from win_proxy
+  ansible.builtin.set_fact:
+    proxy_env:
+      http_proxy: '{{ proxy_url_from_win_proxy }}'
+      https_proxy: '{{ proxy_url_from_win_proxy }}'
+      ftp_proxy: '{{ proxy_use_ftp | ternary(proxy_url_from_win_proxy, omit) }}'
+      no_proxy: >-
+        {{ win_proxy.ProxyBypass is defined | ternary(
+            win_proxy.ProxyBypass | split(";")
+              | map("regex_replace", "^<local>$", proxy_loopback)
+              | map("regex_replace", "^*\.", ".")
+              | map("regex_replace", "^(\d+)\.\*(\.\*\.\*)?$", "\1.0.0.0/8")
+              | map("regex_replace", "^(\d+\.\d+)\.\*(\.\*)?$", "\1.0.0/16")
+              | map("regex_replace", "^(\d+\.\d+\.\d+)\.\*$", "\1.0/24")
+              | map("regex_replace", "^\[([\da-fA-F:]+)\]$", "\1")
+              | flatten | unique | join(",")
+            , omit) }}
+  when:
+    - proxy_env is not defined
+    - win_proxy.ProxyIsEnabled
+    - proxy_url_from_win_proxy is defined
+
+- name: Setting proxy_env var to empty
+  ansible.builtin.set_fact:
+    proxy_env: {}
+  when: proxy_env is not defined
+
+- name: Debug proxy_env
+  ansible.builtin.debug:
+    var: proxy_env
+  when: debug | default(false)

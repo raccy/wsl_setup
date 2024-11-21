@@ -1,0 +1,25 @@
+- name: Install Font package
+  become: true
+  ansible.builtin.apt:
+    name: 'fonts-{{ item }}'
+  loop: '{{ font_list }}'
+  when: font_list
+
+- name: Make /etc/fonts diretory
+  become: true
+  ansible.builtin.file:
+    path: /etc/fonts
+    owner: root
+    group: root
+    mode: '0755'
+  when: font_windows
+
+- name: Copy fonts/local.conf
+  become: true
+  ansible.builtin.copy:
+    src: fonts/local.conf
+    dest: /etc/fonts/local.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: font_windows

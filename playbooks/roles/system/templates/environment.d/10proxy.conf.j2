@@ -1,0 +1,3 @@
+{% for env in proxy_env | dict2items %}
+{{ env.key }}={{ env.value }}
+{% endfor %}

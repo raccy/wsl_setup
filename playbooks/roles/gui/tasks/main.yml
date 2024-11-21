@@ -1,0 +1,19 @@
+- name: Install GUI desktop
+  become: true
+  ansible.builtin.apt:
+    name: '{{ gui_desktop }}'
+  when: gui_desktop
+
+- name: Install GUI package
+  become: true
+  ansible.builtin.apt:
+    name: '{{ item }}'
+  loop: '{{ gui_packages }}'
+  when: gui_packages
+
+- name: Task im
+  ansible.builtin.include_tasks:
+    file: im.yml
+  when:
+    - gui_ime
+    - gui_imf

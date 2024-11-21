@@ -1,0 +1,73 @@
+srv_services:
+  apache:
+    service: apache2
+    package:
+      common: apache2
+      server: apache2
+      devel: apache2-dev
+      document: apache2-doc
+  nginx:
+    service: nginx
+    package:
+      common: nginx
+      server: nginx
+      devel: nginx-dev
+      document: nginx-doc
+  mariadb:
+    service: mariadb
+    package:
+      common: ['mariadb-server', 'mariadb-client', 'libmariadb-dev-compat']
+      server: mariadb-server
+      client: mariadb-client
+      devel: libmariadb-dev-compat
+    lang:
+      nodejs: node-mysql
+      php: php-mysql
+      python: ['python3-mysql.connector', 'python3-pymysql', 'python3-mysqldb']
+      ruby: ruby-mysql2
+  mysql:
+    service: mysql
+    package:
+      common: ['mysql-server', 'mysql-client', 'libmysqlclient-dev']
+      server: mysql-server
+      client: mysql-client
+      devel: libmysqlclient-dev
+    lang:
+      nodejs: node-mysql
+      php: php-mysql
+      python: ['python3-mysql.connector', 'python3-pymysql', 'python3-mysqldb']
+      ruby: ruby-mysql2
+  postgresql:
+    service: postgresql
+    package:
+      common: postgresql-all
+      server: postgresql
+      client: postgresql-client
+      devel: libpq-dev
+      document: postgresql-doc
+    lang:
+      nodejs: ['node-pg', 'node-libpq']
+      php: lib-pgsql
+      python: python3-psycopg2
+      ruby: ruby-pg
+  redis:
+    service: redis-server
+    package:
+      common: redis
+      server: redis-server
+      client: redis-tools
+    lang:
+      nodejs: node-redis
+      php: php-redis
+      python: python3-redis
+      ruby: ruby-redis
+  sqlite:
+    package:
+      common: sqlite3
+      server: sqlite3
+      client: sqliet3-tools
+      document: sqlite3-doc
+    lang:
+      nodejs: node-sqlite3
+      php: php-sqlite3
+      ruby: ruby-sqlite3
