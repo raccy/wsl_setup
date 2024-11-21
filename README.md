@@ -13,3 +13,10 @@
 
 1. Rubyをインストールしておく。
 2. setup.cmd を実行する。
+
+## Rake
+
+- (default) ... setupを実行する。
+- setup ... WSLシステムをインストールし、カレントディレクトリにLinuxを置く。
+- update ... アップデートする。
+- remove ... Linuxを削除する。
