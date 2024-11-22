@@ -237,7 +237,9 @@ file WSL_SETUP[:location_disk] do
   sh "wsl --shutdown"
   if WSL_SETUP[:name] == WSL_SETUP[:distro]
     sh "wsl --manage #{WSL_SETUP[:distro]} --move #{WSL_SETUP[:location]}"
-    sh "wsl --set-version #{WSL_SETUP[:distro]} #{WSL_SETUP[:version]}"
+    if wsl_list[WSL_SETUP[:name]][:version] != WSL_SETUP[:version]
+      sh "wsl --set-version #{WSL_SETUP[:distro]} #{WSL_SETUP[:version]}"
+    end
   else
     sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
        "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
