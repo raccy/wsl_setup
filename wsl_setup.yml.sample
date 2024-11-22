@@ -1,5 +1,5 @@
 ---
-wsl_setup: {}
+wsl_setup:
   # name: (default is same distro)
   # distro: "Ubuntu"
   # version: 2
@@ -13,3 +13,16 @@ wsl_setup: {}
   # https_proxy: http://proxy.example.com:8080
   # skip_update: false
   # skip_autoremove: false
+# debug: false
+# # general (default: true)
+# update: true
+# lang: true
+# font: true
+# # additional (default: false)
+# app: false
+# srv: false
+# gui: false
+# git: false
+# vscode: false
+# anyenv: false
+# home: false
