@@ -30,32 +30,26 @@ WSL_SETUP = {
   rakefile: __FILE__,
   work: ".",
   location: "image",
-  archive: "distro",
-  config: "setup.yml",
+  config: "wsl_setup.yml",
   dir: __dir__,
   playbooks: "playbooks",
   proxy: nil,
   http_proxy: ENV.fetch("http_proxy", nil),
   https_proxy: ENV.fetch("http_proxy", nil),
+  skip_update: false,
+  skip_autoremove: false,
 }.to_h do |name, default|
   [name, ENV.fetch("WSL_SETUP_#{name.to_s.upcase}", default)]
 end
 
 WSL_SETUP[:name] ||= WSL_SETUP[:distro]
+WSL_SETUP[:version] = WSL_SETUP[:version].to_i
 
 WSL_SETUP[:work] = File.expand_path(WSL_SETUP[:work])
 WSL_SETUP[:location] = File.expand_path(WSL_SETUP[:location], WSL_SETUP[:work])
-WSL_SETUP[:archive] = File.expand_path(WSL_SETUP[:archive], WSL_SETUP[:work])
 WSL_SETUP[:config] = File.expand_path(WSL_SETUP[:config], WSL_SETUP[:work])
 WSL_SETUP[:dir] = File.expand_path(WSL_SETUP[:dir])
 WSL_SETUP[:playbooks] = File.expand_path(WSL_SETUP[:playbooks], WSL_SETUP[:dir])
-
-if File.extname(WSL_SETUP[:archive]).empty?
-  WSL_SETUP[:archive] += case WSL_SETUP[:version]
-  in 1 then ".tar"
-  in 2 then ".vhdx"
-  end
-end
 
 WSL_SETUP[:root] = case WSL_SETUP[:version]
 in 1 then "#{WSL_SETUP[:location]}/rootfs"
@@ -147,63 +141,99 @@ def check_mode(mode)
   raise "invalid mode: #{mode}"
 end
 
-def vhd_option
-  if File.extname(WSL_SETUP[:archive]).casecmp?(".vhdx")
-    "--vhd"
-  else
-    ""
-  end
-end
-
 def proxy_env
   WSL_SETUP.slice(:http_proxy, :https_proxy)
 end
 
-task default: :setup
+def wsl_status
+  result = `wsl --status`.force_encoding(Encoding::UTF_16LE)
+    .encode(Encoding::UTF_8)
+  return unless $?.success?
 
-desc "Setup WSL distribution"
-task setup: %i[wsl ansible_playbook]
-
-desc "Remove WSL distribution"
-task :remove do
-  sh "wsl --unregister #{WSL_SETUP[:name]}"
-  rm "#{WSL_SETUP[:location_disk]}"
-  rmdir "#{WSL_SETUP[:location]}"
+  {
+    default: /^既定のディストリビューション: (\S+)$/.match(result)[1],
+    version: /^既定のバージョン: (\S+)$/.match(result)[1].to_i,
+    enable_wsl1: !/^WSL1 は、現在のマシン構成ではサポートされていません。$/
+      .match?(result),
+  }
 end
 
-task wsl: WSL_SETUP[:location_disk]
+def wsl_list
+  result = `wsl --list --all --verbose`.force_encoding(Encoding::UTF_16LE)
+    .encode(Encoding::UTF_8)
+  raise "no wsl distribution" unless $?.success?
 
-file WSL_SETUP[:location_disk] => WSL_SETUP[:archive] do |t|
-  sh "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} #{t.source} " \
-     "--version #{WSL_SETUP[:version]} #{vhd_option}"
-end
-
-file WSL_SETUP[:archive] do |t|
-  sh "wsl --status" do |_result, status|
-    if status.success?
-      sh "wsl --update"
+  result.lines.drop(1).to_h do |line|
+    if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
+      [
+        m[2],
+        { default: m[1] == "*", name: m[2], state: m[3], version: m[4].to_i }
+      ]
     else
-      sh "wsl --install --no-distribute" do
-        puts "Reboot after 10secs"
-        sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
-        exit
-      end
+      raise "invalid wsl list line: #{line}"
     end
+  end
+end
+
+task default: :create
+
+desc "Create WSL distribution"
+task create: %i[distro ansible_playbook]
+
+desc "Destroy WSL distribution"
+task :destroy do
+  if wsl_list.key?(WSL_SETUP[:name])
+    sh "wsl --unregister #{WSL_SETUP[:name]}"
+    rm WSL_SETUP[:location_disk]
+    rmdir WSL_SETUP[:location]
+  end
+end
+
+task distro: WSL_SETUP[:location_disk]
+
+file WSL_SETUP[:location_disk] do
+  wsl = wsl_status
+  if wsl.nil?
+    # install wsl
+    sh "wsl --install --no-distribute"
+    puts "Reboot after 10secs"
+    sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
+    exit
+  elsif WSL_SETUP[:version] == 1 && !wsl[:enable_wsl1]
+    # require Microsoft-Windows-Subsystem-Linux feature
+    sh "dism /online /enable-feature " \
+       "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    puts "Reboot after 10secs"
+    sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
+    exit
+  else
+    # update only
+    sh "wsl --update"
   end
   distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
   sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
   sh "start /wait #{distro_exe} install --root"
   sh "wsl --terminate #{WSL_SETUP[:distro]}"
   sh "wsl --shutdown"
-  sh "wsl --export #{WSL_SETUP[:distro]} #{t.name} #{vhd_option}"
-  sh "wsl --unregister #{WSL_SETUP[:distro]}"
+  if WSL_SETUP[:name] == WSL_SETUP[:distro]
+    sh "wsl --manage #{WSL_SETUP[:distro]} --move #{WSL_SETUP[:location]}"
+  else
+    sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
+       "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
+       "--version #{WSL_SETUP[:version]} --vhd"
+    sh "wsl --unregister #{WSL_SETUP[:distro]}"
+  end
 end
 
-task apt: :wsl
+task apt: :distro
 
 task update: :apt do
+  next if WSL_SETUP[:skip_update]
+
   wsl_run("apt update -y", env: proxy_env, user: "root")
   wsl_run("apt upgrade -y", env: proxy_env, user: "root")
+  next if WSL_SETUP[:skip_autoremove]
+
   wsl_run("apt autoremove -y", env: proxy_env, user: "root")
 end
 
@@ -225,6 +255,6 @@ task ansible_playbook_root: :ansible do
   sh "wsl --terminate #{WSL_SETUP[:name]}"
 end
 
-task ansible: %i[apt update] do
+task ansible: :update do
   wsl_run("apt install ansible -y", env: proxy_env, user: "root")
 end

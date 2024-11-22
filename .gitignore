@@ -1,4 +1,2 @@
 /image
-/distro.tar
-/distro.vhdx
-/setup.yml
+/wsl_setup.yml
