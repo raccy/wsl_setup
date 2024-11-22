@@ -210,6 +210,10 @@ file WSL_SETUP[:location_disk] do
     # update only
     sh "wsl --update"
   end
+  if wsl_list.key?(WSL_SETUP[:name])
+    raise "wsl distribution exists in other location"
+  end
+
   distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
   sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
   sh "start /wait #{distro_exe} install --root"
