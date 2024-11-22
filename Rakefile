@@ -28,7 +28,6 @@ WSL_SETUP = {
   name: nil,
   distro: "Ubuntu",
   version: 2,
-  rakefile: __FILE__,
   work: ".",
   location: "image",
   config: "wsl_setup.yml",
@@ -74,7 +73,7 @@ if WSL_SETUP[:proxy]
   end
 end
 
-def run_capture(cmd, encoding: Encoding::UTF_16LE, exception: false, **opts)
+def run_capture(cmd, encoding: Encoding::UTF_8, exception: false, **opts)
   stdout, status = Open3.capture2(cmd, binmode: true, **opts)
   if status.success?
     stdout.encode(Encoding.default_internal || Encoding::UTF_8, encoding)
@@ -160,7 +159,7 @@ def proxy_env
 end
 
 def wsl_status
-  result = run_capture("wsl --status")
+  result = run_capture("wsl --status", encoding: Encoding::UTF_16LE)
   return if result.nil?
 
   {
@@ -172,7 +171,8 @@ def wsl_status
 end
 
 def wsl_list
-  result = run_capture("wsl --list --all --verbose", exception: true)
+  result = run_capture("wsl --list --all --verbose",
+    encoding: Encoding::UTF_16LE, exception: true)
 
   result.lines.drop(1).to_h do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
@@ -237,6 +237,7 @@ file WSL_SETUP[:location_disk] do
   sh "wsl --shutdown"
   if WSL_SETUP[:name] == WSL_SETUP[:distro]
     sh "wsl --manage #{WSL_SETUP[:distro]} --move #{WSL_SETUP[:location]}"
+    sh "wsl --set-version #{WSL_SETUP[:distro]} #{WSL_SETUP[:version]}"
   else
     sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
        "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
