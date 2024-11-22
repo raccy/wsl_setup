@@ -1,0 +1,25 @@
+# wslinfo --networking-mode
+# wsl2:
+#   - none
+#   - nat (default)
+#   - mirrored
+#   - virtioproxy
+# wsl1:
+#   - wsl1
+---
+- name: Run wslinfo --networking-mode
+  ansible.builtin.command:
+    argv:
+      - wslinfo
+      - -n
+      - --networking-mode
+  changed_when: false
+  register: wsl_run_wslinfo_networking_mode
+
+- name: Setting wsl_networking_mode
+  ansible.builtin.set_fact:
+    wsl_networking_mode: '{{ wsl_run_wslinfo_networking_mode.stdout }}'
+
+- name: Setting wsl_version
+  ansible.builtin.set_fact:
+    wsl_version: '{{ wsl_networking_mode == "wsl1" | ternary(1, 2) }}'

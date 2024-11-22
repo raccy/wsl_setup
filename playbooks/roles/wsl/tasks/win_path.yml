@@ -1,0 +1,13 @@
+- name: Run wslpath -m
+  ansible.builtin.command:
+    argv:
+      - wslpath
+      - -m
+      - --
+      - '{{ wsl_wsl_path }}'
+  changed_when: false
+  register: wsl_run_wslpath_m
+
+- name: Setting
+  ansible.builtin.set_fact:
+    wsl_win_path: '{{ wsl_run_wslpath_m.stdout_lines | first }}'

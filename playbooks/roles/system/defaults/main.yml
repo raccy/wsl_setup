@@ -1,4 +1,4 @@
-system_systemd: true
+system_systemd: true # but ignore when wsl1
 # system_hostname: default value is windows hostname
 system_windows_path: false
 system_mount_auto: true

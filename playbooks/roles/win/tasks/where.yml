@@ -5,19 +5,14 @@
   ignore_errors: true
   register: win_run_where
 
-- name: Run wslpath -u
-  ansible.builtin.command:
-    argv:
-      - wslpath
-      - -u
-      - --
-      - '{{ win_run_where.stdout_lines | first }}'
-  changed_when: false
-  register: win_run_wslpath
+- name: Task win_path in wsl
+  ansible.builtin.include_role:
+    name: wsl
+    tasks_from: wsl_path
+  vars:
+    wsl_win_path: '{{ win_run_where.stdout_lines | first }}'
   when: win_run_where.rc == 0
 
 - name: Setting win_where_path
   ansible.builtin.set_fact:
-    win_where_path: >-
-      {{ (win_run_where.rc == 0)
-        | ternary(win_run_wslpath.stdout, "") }}
+    win_where_path: '{{ (win_run_where.rc == 0) | ternary(wsl_wsl_path, "") }}'

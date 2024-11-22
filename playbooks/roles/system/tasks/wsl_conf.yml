@@ -10,6 +10,7 @@
     option: systemd
     value: '{{ system_systemd | lower }}' # default false
     state: '{{ system_systemd | ternary("present", "absent") }}'
+  when: wsl_version | int >= 2
 
 - name: Set hostname in wsl.conf
   become: true
