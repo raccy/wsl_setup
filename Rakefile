@@ -3,6 +3,7 @@
 # setup wsl
 
 require "open3"
+require "yaml"
 
 DISTRO_EXE_MAP = {
   "AlmaLinux-8" => "almalinux8.exe",
@@ -42,6 +43,12 @@ WSL_SETUP = {
   [name, ENV.fetch("WSL_SETUP_#{name.to_s.upcase}", default)]
 end
 
+WSL_SETUP_CONFIG_FILE = File.expand_path(WSL_SETUP[:config], WSL_SETUP[:work])
+if FileTest.exist?(WSL_SETUP_CONFIG_FILE)
+  WSL_SETUP.merge!(YAML.load_file(WSL_SETUP_CONFIG_FILE, symbolize_names: true)
+    .fetch(:wsl_setup, {}))
+end
+
 WSL_SETUP[:name] ||= WSL_SETUP[:distro]
 WSL_SETUP[:version] = WSL_SETUP[:version].to_i
 
@@ -67,16 +74,23 @@ if WSL_SETUP[:proxy]
   end
 end
 
-def wsl_run(cmd, binmode: true, capture: false, **opts)
+def run_capture(cmd, encoding: Encoding::UTF_16LE, exception: false, **opts)
+  stdout, status = Open3.capture2(cmd, binmode: true, **opts)
+  if status.success?
+    stdout.encode(Encoding.default_internal || Encoding::UTF_8, encoding)
+      .gsub(/\R/, "\n")
+  elsif exception
+    raise "Failed to command: #{cmd}"
+  end
+end
+
+def wsl_run(cmd, capture: false, **opts)
   puts cmd
   wsl_cmd_opts = %i[distro user cd env].to_h { |key| [key, opts.delete(key)] }
   wsl_cmd = generate_wsl_cmd(cmd, **wsl_cmd_opts.compact)
 
   if capture
-    stdout, status = Open3.capture2(wsl_cmd, binmode: binmode, **opts)
-    raise "Failed to command in wsl: #{cmd}" unless status.success?
-
-    stdout
+    run_capture(wsl_cmd, exception: true, **opts)
   else
     system(wsl_cmd, **opts, exception: true)
   end
@@ -146,9 +160,8 @@ def proxy_env
 end
 
 def wsl_status
-  result = `wsl --status`.force_encoding(Encoding::UTF_16LE)
-    .encode(Encoding::UTF_8)
-  return unless $?.success?
+  result = run_capture("wsl --status")
+  return if result.nil?
 
   {
     default: /^既定のディストリビューション: (\S+)$/.match(result)[1],
@@ -159,16 +172,12 @@ def wsl_status
 end
 
 def wsl_list
-  result = `wsl --list --all --verbose`.force_encoding(Encoding::UTF_16LE)
-    .encode(Encoding::UTF_8)
-  raise "no wsl distribution" unless $?.success?
+  result = run_capture("wsl --list --all --verbose", exception: true)
 
   result.lines.drop(1).to_h do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
-      [
-        m[2],
-        { default: m[1] == "*", name: m[2], state: m[3], version: m[4].to_i }
-      ]
+      [m[2], { default: m[1] == "*", name: m[2], state: m[3],
+               version: m[4].to_i, }]
     else
       raise "invalid wsl list line: #{line}"
     end
@@ -184,28 +193,35 @@ desc "Destroy WSL distribution"
 task :destroy do
   if wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
-    rm WSL_SETUP[:location_disk]
     rmdir WSL_SETUP[:location]
   end
 end
 
 task distro: WSL_SETUP[:location_disk]
 
+task :install_wsl do
+  # install wsl
+  sh "wsl --install --no-distribute"
+  puts "Reboot after 10secs"
+  sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
+  exit # no return
+end
+
+task :install_feature do
+  # install Microsoft-Windows-Subsystem-Linux feature
+  sh "dism /online /enable-feature " \
+     "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+  puts "Reboot after 10secs"
+  sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
+  exit # no return
+end
+
 file WSL_SETUP[:location_disk] do
   wsl = wsl_status
   if wsl.nil?
-    # install wsl
-    sh "wsl --install --no-distribute"
-    puts "Reboot after 10secs"
-    sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
-    exit
+    Rake::Task["install_wsl"].invoke
   elsif WSL_SETUP[:version] == 1 && !wsl[:enable_wsl1]
-    # require Microsoft-Windows-Subsystem-Linux feature
-    sh "dism /online /enable-feature " \
-       "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
-    puts "Reboot after 10secs"
-    sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
-    exit
+    Rake::Task["install_feature"].invoke
   else
     # update only
     sh "wsl --update"
