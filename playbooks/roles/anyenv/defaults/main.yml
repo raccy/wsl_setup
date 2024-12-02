@@ -1,4 +1,4 @@
-aynenv_envs:
+anyenv_envs:
   - rbenv
   - pyenv
   - nodev
