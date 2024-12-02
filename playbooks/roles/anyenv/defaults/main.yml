@@ -2,4 +2,4 @@ anyenv_envs:
   - rbenv
   - pyenv
   - nodev
-anyenv_update: false
+anyenv_update: true
