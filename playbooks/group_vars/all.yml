@@ -10,4 +10,5 @@ gui: false
 git: false
 vscode: false
 anyenv: false
+vagrant: false
 home: false
