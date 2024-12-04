@@ -5,12 +5,13 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: boot
     option: systemd
     value: '{{ system_systemd | lower }}' # default false
-    state: '{{ system_systemd | ternary("present", "absent") }}'
-  when: wsl_version | int >= 2
+    state: >-
+      {{ (wsl_version | int >= 2 and system_systemd)
+        | ternary("present", "absent") }}
 
 - name: Set hostname in wsl.conf
   become: true
@@ -19,7 +20,7 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: network
     option: hostname
     value: '{{ system_hotname | default("") }}'
@@ -32,10 +33,10 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: interop
     option: appendWindowsPath
-    value: '{{ system_windows_path | lower }}'
+    value: '{{ system_windows_path | lower }}' # default true
     state: '{{ system_windows_path | ternary("absent", "present") }}'
 
 - name: Enable/Disable automount in wsl.conf
@@ -45,7 +46,7 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: automount
     option: enabled
     value: '{{ system_mount_auto | lower }}' # default true
@@ -58,7 +59,7 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: automount
     option: mountFsTab
     value: '{{ system_mount_fstab | lower }}' # default true
@@ -71,7 +72,7 @@
     owner: root
     group: root
     mode: '0644'
-    exclusive: false
+    exclusive: true
     section: automount
     option: options
     value: '"{{ system_mount_options | default([]) | join(",") }}"'
