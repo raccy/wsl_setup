@@ -241,9 +241,15 @@ file WSL_SETUP[:location_disk] do
       sh "wsl --set-version #{WSL_SETUP[:distro]} #{WSL_SETUP[:version]}"
     end
   else
-    sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
+    if WSL_SETUP[:version] == 1
+    sh "wsl --export #{WSL_SETUP[:distro]} - |" \
        "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
-       "--version #{WSL_SETUP[:version]} --vhd"
+       "--version #{WSL_SETUP[:version]}"
+    else
+      sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
+      "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
+      "--version #{WSL_SETUP[:version]} --vhd"
+    end
     sh "wsl --unregister #{WSL_SETUP[:distro]}"
   end
 end
