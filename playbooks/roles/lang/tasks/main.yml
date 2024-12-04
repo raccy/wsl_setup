@@ -13,15 +13,18 @@
     cmd: localectl status
   changed_when: false
   register: lang_run_localectl_status
+  when: wsl_systemd
 
 - name: Run localectl set-locale
   become: true
   ansible.builtin.command:
     cmd: 'localectl set-locale {{ lang_locale }}'
   changed_when: true
-  when: >-
-    lang_run_localectl_status.stdout_lines | first
-      is not search("LANG=" ~ lang_locale)
+  when:
+    - wsl_systemd
+    - >-
+      lang_run_localectl_status.stdout_lines | first
+        is not search("LANG=" ~ lang_locale)
 
 - name: Install manual packages
   become: true
