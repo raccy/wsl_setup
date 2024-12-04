@@ -1,2 +1,3 @@
 dependencies:
   - role: win
+  - role: proxy

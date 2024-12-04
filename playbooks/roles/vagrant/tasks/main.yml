@@ -1,18 +1,33 @@
 - name: Add hashicorp gpg 
   become: true
-  ansible.builtin.command:
-    cmd: gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-    stdin: '{{ lookup("url", "https://apt.releases.hashicorp.com/gpg") }}'
+  ansible.builtin.shell:
+    cmd: >-
+      wget -O - https://apt.releases.hashicorp.com/gpg
+      | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
     creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  environment: '{{ proxy_env }}'
+
+- name: Run dpkg --print-architecture
+  ansible.builtin.command:
+    cmd: dpkg --print-architecture
+  changed_when: false
+  register: vagrant_run_dpkg_print_architecture
+
+- name: Run lsb_release -cs
+  ansible.builtin.command:
+    cmd: lsb_release -cs
+  changed_when: false
+  register: vagrant_run_lsb_relase_cs
 
 - name: Add hashicorp repository
   become: true
   ansible.builtin.apt_repository:
     repo: >-
       deb
-      [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]
+      [arch={{ vagrant_run_dpkg_print_architecture.stdout }}
+      signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]
       https://apt.releases.hashicorp.com
-      $(lsb_release -cs)
+      {{ vagrant_run_lsb_relase_cs.stdout }}
       main
     filename: hashicorp
     state: present
