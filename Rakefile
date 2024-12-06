@@ -163,7 +163,7 @@ def wsl_status
   return if result.nil?
 
   {
-    default: /^既定のディストリビューション: (\S+)$/.match(result)[1],
+    default: /^既定のディストリビューション: (\S+)$/.match(result)&.[](1),
     version: /^既定のバージョン: (\S+)$/.match(result)[1].to_i,
     enable_wsl1: !/^WSL1 は、現在のマシン構成ではサポートされていません。$/
       .match?(result),
@@ -172,16 +172,16 @@ end
 
 def wsl_list
   result = run_capture("wsl --list --all --verbose",
-    encoding: Encoding::UTF_16LE, exception: true)
+    encoding: Encoding::UTF_16LE)
 
-  result.lines.drop(1).to_h do |line|
+  result&.lines&.drop(1)&.to_h do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
       [m[2], { default: m[1] == "*", name: m[2], state: m[3],
                version: m[4].to_i, }]
     else
       raise "invalid wsl list line: #{line}"
     end
-  end
+  end || {}
 end
 
 task default: :create
