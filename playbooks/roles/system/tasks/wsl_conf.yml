@@ -23,8 +23,8 @@
     exclusive: true
     section: network
     option: hostname
-    value: '{{ system_hotname | default("") }}'
-    state: '{{ system_hotname is defined | ternary("present", "absent") }}'
+    value: '{{ system_hostname | default("") }}'
+    state: '{{ system_hostname is defined | ternary("present", "absent") }}'
 
 - name: Enable/Disable windows path in wsl.conf
   become: true
