@@ -3,6 +3,7 @@ wsl_setup:
   # name: (default is same distro)
   # distro: "Ubuntu"
   # version: 2
+  # input_user: false
   # work: "."
   # location: "image"
   # config: "wsl_setup.yml"
@@ -11,8 +12,8 @@ wsl_setup:
   # proxy: http://proxy.example.com:8080
   # http_proxy: http://proxy.example.com:8080
   # https_proxy: http://proxy.example.com:8080
+  # skip_location: false
   # skip_update: false
-  # skip_autoremove: false
 # debug: false
 # # general (default: true)
 # update: true

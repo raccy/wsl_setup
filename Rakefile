@@ -28,6 +28,7 @@ WSL_SETUP = {
   name: nil,
   distro: "Ubuntu",
   version: 2,
+  input_user: false,
   work: ".",
   location: "image",
   config: "wsl_setup.yml",
@@ -36,8 +37,8 @@ WSL_SETUP = {
   proxy: nil,
   http_proxy: ENV.fetch("http_proxy", nil),
   https_proxy: ENV.fetch("http_proxy", nil),
+  skip_location: false,
   skip_update: false,
-  skip_autoremove: false,
 }.to_h do |name, default|
   [name, ENV.fetch("WSL_SETUP_#{name.to_s.upcase}", default)]
 end
@@ -50,17 +51,13 @@ end
 
 WSL_SETUP[:name] ||= WSL_SETUP[:distro]
 WSL_SETUP[:version] = WSL_SETUP[:version].to_i
+WSL_SETUP[:root] = "//wsl.localhost/#{WSL_SETUP[:name]}"
 
 WSL_SETUP[:work] = File.expand_path(WSL_SETUP[:work])
 WSL_SETUP[:location] = File.expand_path(WSL_SETUP[:location], WSL_SETUP[:work])
 WSL_SETUP[:config] = File.expand_path(WSL_SETUP[:config], WSL_SETUP[:work])
 WSL_SETUP[:dir] = File.expand_path(WSL_SETUP[:dir])
 WSL_SETUP[:playbooks] = File.expand_path(WSL_SETUP[:playbooks], WSL_SETUP[:dir])
-
-WSL_SETUP[:root] = case WSL_SETUP[:version]
-in 1 then "#{WSL_SETUP[:location]}/rootfs"
-in 2 then "//wsl.localhost/#{WSL_SETUP[:name]}"
-end
 
 WSL_SETUP[:location_disk] = case WSL_SETUP[:version]
 in 1 then "#{WSL_SETUP[:location]}/rootfs"
@@ -142,6 +139,10 @@ def wsl_chmod(path, mode)
   wsl_run("chmod #{mode} -- #{path}")
 end
 
+def wsl_whoami(**opts)
+  wsl_run("whoami", capture: true, **opts).force_encoding(Encoding::UTF_8)
+end
+
 def check_path(path)
   return if path =~ %r{\A[\w/.-]+\z}
 
@@ -197,7 +198,8 @@ task :destroy do
   end
 end
 
-task distro: WSL_SETUP[:location_disk]
+task distro: (WSL_SETUP[:skip_location] ? :install_distro
+                                        : WSL_SETUP[:skip_location])
 
 task :install_wsl do
   # install wsl
@@ -216,23 +218,34 @@ task :install_feature do
   exit # no return
 end
 
-file WSL_SETUP[:location_disk] do
-  wsl = wsl_status
-  if wsl.nil?
-    Rake::Task["install_wsl"].invoke
-  elsif WSL_SETUP[:version] == 1 && !wsl[:enable_wsl1]
-    Rake::Task["install_feature"].invoke
-  else
-    # update only
-    sh "wsl --update"
-  end
-  if wsl_list.key?(WSL_SETUP[:name])
-    raise "wsl distribution exists in other location"
-  end
+task :update_wsl do
+  sh "wsl --update"
+end
 
-  distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
-  sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
-  sh "start /wait #{distro_exe} install --root"
+task :install_distro do
+  wsl = wsl_status
+  task_name =
+    if wsl.nil?
+      "install_wsl"
+    elsif WSL_SETUP[:version] == 1 && !wsl[:enable_wsl1]
+      "install_feature"
+    else
+      "update_wsl"
+    end
+  Rake::Task[task_name].invoke
+
+  unless wsl_list.key?(WSL_SETUP[:name])
+    if WSL_SETUP[:input_user]
+      sh "wsl --install #{WSL_SETUP[:distro]}"
+    else
+      distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
+      sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
+      sh "start /wait #{distro_exe} install --root"
+    end
+  end
+end
+
+file WSL_SETUP[:location_disk] => :install_distro do
   sh "wsl --terminate #{WSL_SETUP[:distro]}"
   sh "wsl --shutdown"
   if WSL_SETUP[:name] == WSL_SETUP[:distro]
@@ -257,12 +270,8 @@ end
 task apt: :distro
 
 task update: :apt do
-  next if WSL_SETUP[:skip_update]
-
   wsl_run("apt update -y", env: proxy_env, user: "root")
   wsl_run("apt upgrade -y", env: proxy_env, user: "root")
-  next if WSL_SETUP[:skip_autoremove]
-
   wsl_run("apt autoremove -y", env: proxy_env, user: "root")
 end
 
@@ -279,11 +288,15 @@ task ansible_playbook_root: :ansible do
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config], user: 'root')}"
   end
+  if WSL_SETUP[:input_user]
+    option << " -e user_default=#{wsl_whoami}"
+  end
+
   wsl_run("ansible-playbook root.yml #{option}", cd: WSL_SETUP[:playbooks],
     user: "root")
   sh "wsl --terminate #{WSL_SETUP[:name]}"
 end
 
-task ansible: :update do
+task ansible: [:apt, (:update if WSL_SETUP[:skip_update])] do
   wsl_run("apt install ansible -y", env: proxy_env, user: "root")
 end
