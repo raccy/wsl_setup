@@ -1,9 +1,9 @@
-- name: Task check_user.yml
+- name: Task check_user
   ansible.builtin.include_tasks:
     file: check_user.yml
   when: user_default is defined
 
-- name: Task add_user.yml
+- name: Task add_user
   ansible.builtin.include_tasks:
     file: add_user.yml
   when: user_default is not defined

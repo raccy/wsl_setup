@@ -8,13 +8,17 @@
     database: group
   when: ansible_facts.getent_group is not defined
 
+- name: Set default user name
+  ansible.builtin.set_fact:
+    user_default_user_name: '{{ user_default }}'
+
 - name: Search default user
   ansible.builtin.set_fact:
     user_default_user_getent: >-
-      {{ ansible_facts.getent_passwd[user_default] | default(omit) }}
+      {{ ansible_facts.getent_passwd[user_default_user_name] | default(omit) }}
 
 - name: Fail if not user
-  ansible.buitin.fail:
+  ansible.builtin.fail:
     msg: 'Default user dose not exist.'
   when: user_default_user_getent is not defined
 
@@ -22,32 +26,38 @@
   ansible.builtin.set_fact:
     user_default_user: >-
       {{ {
-        name: user_default_user_getent[0],
-        passwod: user_default_user_getent[1],
-        uid: user_default_user_getent[2] | int,
-        group: user_default_user_getent[3] | int,
-        comment: user_default_user_getent[4],
-        home: user_default_user_getent[5],
-        shell: user_default_user_getent[6],
+        "name": user_default_user_name,
+        "passwod": user_default_user_getent[0],
+        "uid": user_default_user_getent[1] | int,
+        "group": user_default_user_getent[2] | int,
+        "comment": user_default_user_getent[3],
+        "home": user_default_user_getent[4],
+        "shell": user_default_user_getent[5],
       } }}
 
-- name: Search default group
+- name: Set default group name
+  ansible.builtin.set_fact:
+    user_default_group_name: >-
+      {{ (item.value[1] | int == user_default_user.group)
+        | ternary(item.key, user_default_group_name | default("")) }}
+  loop: '{{ ansible_facts.getent_group | dict2items }}'
+
+- name: Search default user
   ansible.builtin.set_fact:
     user_default_group_getent: >-
-      {{ ansible_facts.getent_group.values
-        | seletattr(0, "==", user_default_user.group) | first }}
+      {{ ansible_facts.getent_group[user_default_group_name] | default(omit) }}
 
 - name: Fail if not group
-  ansible.buitin.fail:
+  ansible.builtin.fail:
     msg: 'Default group dose not exist.'
   when: user_default_group_getent is not defined
 
 - name: Set default group fact
   ansible.builtin.set_fact:
-    user_default_user: >-
+    user_default_group: >-
       {{ {
-        name: user_default_group_getent[0],
-        passwod: user_default_group_getent[1],
-        gid: user_default_group_getent[2] | int,
-        users: user_default_group_getent[3],
+        "name": user_default_group_name,
+        "passwod": user_default_group_getent[0],
+        "gid": user_default_group_getent[1] | int,
+        "users": user_default_group_getent[2],
       } }}
