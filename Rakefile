@@ -105,7 +105,7 @@ end
 
 def wsl_path(path, **opts)
   wsl_run("wslpath -u \"#{path}\"", capture: true, **opts)
-    .force_encoding(Encoding::UTF_8)
+    .force_encoding(Encoding::UTF_8).chomp
 end
 
 def wsl_file_read(path, **opts)
@@ -194,7 +194,7 @@ desc "Destroy WSL distribution"
 task :destroy do
   if wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
-    unless WSL[:skip_location]
+    unless WSL_SETUP[:skip_location]
       rmdir WSL_SETUP[:location]
     end
   end
