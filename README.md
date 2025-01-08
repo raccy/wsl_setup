@@ -16,7 +16,7 @@
 
 ## Rake
 
-- (default) ... setupを実行する。
-- setup ... WSLシステムをインストールし、カレントディレクトリにLinuxを置く。
+- (default) ... createを実行する。
+- create ... WSLシステムをインストールし、カレントディレクトリにLinuxを置く。
 - update ... アップデートする。
-- remove ... Linuxを削除する。
+- destory ... Linuxを削除する。

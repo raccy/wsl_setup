@@ -194,12 +194,14 @@ desc "Destroy WSL distribution"
 task :destroy do
   if wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
-    rmdir WSL_SETUP[:location]
+    unless WSL[:skip_location]
+      rmdir WSL_SETUP[:location]
+    end
   end
 end
 
 task distro: (WSL_SETUP[:skip_location] ? :install_distro
-                                        : WSL_SETUP[:skip_location])
+                                        : WSL_SETUP[:location_disk])
 
 task :install_wsl do
   # install wsl
@@ -269,6 +271,7 @@ end
 
 task apt: :distro
 
+desc "Update WSL distribution"
 task update: :apt do
   wsl_run("apt update -y", env: proxy_env, user: "root")
   wsl_run("apt upgrade -y", env: proxy_env, user: "root")
@@ -297,6 +300,6 @@ task ansible_playbook_root: :ansible do
   sh "wsl --terminate #{WSL_SETUP[:name]}"
 end
 
-task ansible: [:apt, (:update if WSL_SETUP[:skip_update])] do
+task ansible: [:apt, (:update unless WSL_SETUP[:skip_update])].compact do
   wsl_run("apt install ansible -y", env: proxy_env, user: "root")
 end
