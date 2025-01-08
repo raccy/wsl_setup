@@ -140,7 +140,7 @@ def wsl_chmod(path, mode)
 end
 
 def wsl_whoami(**opts)
-  wsl_run("whoami", capture: true, **opts).force_encoding(Encoding::UTF_8)
+  wsl_run("whoami", capture: true, **opts).force_encoding(Encoding::UTF_8).chomp
 end
 
 def check_path(path)
@@ -282,6 +282,9 @@ task ansible_playbook: %i[ansible ansible_playbook_root] do
   option = String.new
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config])}"
+  end
+  if WSL_SETUP[:input_user]
+    option << " -e user_default=#{wsl_whoami} -K"
   end
   wsl_run("ansible-playbook all.yml #{option}", cd: WSL_SETUP[:playbooks])
 end
