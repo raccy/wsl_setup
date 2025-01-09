@@ -22,4 +22,4 @@
 
 - name: Setting wsl_version
   ansible.builtin.set_fact:
-    wsl_version: '{{ wsl_networking_mode == "wsl1" | ternary(1, 2) }}'
+    wsl_version: '{{ (wsl_networking_mode == "wsl1") | ternary(1, 2) }}'
