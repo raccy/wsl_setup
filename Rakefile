@@ -4,6 +4,7 @@
 
 require "open3"
 require "yaml"
+require "win32/registry"
 
 DISTRO_EXE_MAP = {
   "AlmaLinux-8" => "almalinux8.exe",
@@ -175,14 +176,32 @@ def wsl_list
   result = run_capture("wsl --list --all --verbose",
     encoding: Encoding::UTF_16LE)
 
-  result&.lines&.drop(1)&.to_h do |line|
+  list = result.lines.drop(1)&.to_h do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
-      [m[2], { default: m[1] == "*", name: m[2], state: m[3],
-               version: m[4].to_i, }]
+      [m[2], {
+        default: m[1] == "*",
+        name: m[2],
+        state: m[3],
+        version: m[4].to_i,
+      }]
     else
       raise "invalid wsl list line: #{line}"
     end
-  end || {}
+  end
+
+  Win32::Registry::HKEY_CURRENT_USER
+    .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
+    reg.each_key do |key, wtime|
+      reg.open(key) do |sub|
+        name = sub["DistributionName"]
+        list[name][:key] = key
+        list[name][:uid] = sub["DefaultUid"]
+        list[name][:path] = sub["BasePath"]
+      end
+    end
+  end
+
+  list
 end
 
 task default: :create
@@ -236,7 +255,7 @@ task :install_distro do
     end
   Rake::Task[task_name].invoke
 
-  unless wsl_list.key?(WSL_SETUP[:name])
+  unless wsl_list.key?(WSL_SETUP[:distro])
     if WSL_SETUP[:input_user]
       sh "wsl --install #{WSL_SETUP[:distro]}"
     else
@@ -247,7 +266,8 @@ task :install_distro do
   end
 end
 
-file WSL_SETUP[:location_disk] => :install_distro do
+file WSL_SETUP[:location_disk] do
+  Rake::Task[:install_distro].invoke
   sh "wsl --terminate #{WSL_SETUP[:distro]}"
   sh "wsl --shutdown"
   if WSL_SETUP[:name] == WSL_SETUP[:distro]
@@ -264,6 +284,15 @@ file WSL_SETUP[:location_disk] => :install_distro do
       sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
       "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
       "--version #{WSL_SETUP[:version]} --vhd"
+    end
+    list = wsl_list
+    default_uid = list[WSL_SETUP[:distro]][:uid]
+    Win32::Registry::HKEY_CURRENT_USER
+      .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
+      reg.open(list[WSL_SETUP[:name]][:key],
+        Win32::Registry::KEY_READ | Win32::Registry::KEY_WRITE) do |sub|
+        sub["DefaultUid"] = default_uid
+      end
     end
     sh "wsl --unregister #{WSL_SETUP[:distro]}"
   end
