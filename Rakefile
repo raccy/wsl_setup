@@ -175,6 +175,7 @@ end
 def wsl_list
   result = run_capture("wsl --list --all --verbose",
     encoding: Encoding::UTF_16LE)
+  return {} if result.nil?
 
   list = result.lines.drop(1)&.to_h do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
