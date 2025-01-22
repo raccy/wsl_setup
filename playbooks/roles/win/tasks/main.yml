@@ -26,6 +26,7 @@
       - show
       - advproxy
   changed_when: false
+  ignore_errors: true
   register: win_run_netsh_winhttp_show_advproxy
 
 - name: Setting win_proxy var
@@ -35,8 +36,11 @@
         | regex_replace("^[^{]*{", "{")
         | from_json
       }}
+  when: win_run_netsh_winhttp_show_advproxy.rc == 0
 
 - name: Debug win_proxy
   ansible.builtin.debug:
     var: win_proxy
-  when: debug | default(false)
+  when:
+    - win_proxy is defined
+    - debug | default(false)

@@ -28,7 +28,9 @@
     proxy_url_from_win_proxy: >-
       {{ win_proxy.Proxy is match("https+://")
         | ternary(win_proxy.Proxy, "http://" ~ win_proxy.Proxy) }}
-  when: win_proxy.Proxy is defined
+  when:
+    - win_proxy is defined
+    - win_proxy.Proxy is defined
 
 - name: Setting proxy_env var from win_proxy
   ansible.builtin.set_fact:
@@ -49,6 +51,7 @@
             , omit) }}
   when:
     - proxy_env is not defined
+    - win_proxy is defined
     - win_proxy.ProxyIsEnabled
     - proxy_url_from_win_proxy is defined
 
