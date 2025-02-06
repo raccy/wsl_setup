@@ -241,7 +241,7 @@ task distro: :wsl do
     install_option = String.new
     install_option << " --install #{WSL_SETUP[:distro]}"
     unless WSL_SETUP[:skip_location]
-      install_option << " --location #{WSL_SETUP[:location_disk]}"
+      install_option << " --location #{WSL_SETUP[:location]}"
     end
     if WSL_SETUP[:name] != WSL_SETUP[:distro]
       install_option << " --name #{WSL_SETUP[:name]}"
