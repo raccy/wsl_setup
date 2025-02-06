@@ -160,7 +160,7 @@ def proxy_env
   WSL_SETUP.slice(:http_proxy, :https_proxy)
 end
 
-def wsl_status
+def get_wsl_status
   result = run_capture("wsl --status", encoding: Encoding::UTF_16LE)
   return if result.nil?
 
@@ -172,7 +172,7 @@ def wsl_status
   }
 end
 
-def wsl_list
+def get_wsl_list
   result = run_capture("wsl --list --all --verbose",
     encoding: Encoding::UTF_16LE)
   return {} if result.nil?
@@ -192,7 +192,7 @@ def wsl_list
 
   Win32::Registry::HKEY_CURRENT_USER
     .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
-    reg.each_key do |key, wtime|
+    reg.each_key do |key, _wtime|
       reg.open(key) do |sub|
         name = sub["DistributionName"]
         list[name][:key] = key
@@ -214,90 +214,54 @@ desc "Destroy WSL distribution"
 task :destroy do
   if wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
-    unless WSL_SETUP[:skip_location]
-      rmdir WSL_SETUP[:location]
-    end
+    rmdir WSL_SETUP[:location] unless WSL_SETUP[:skip_location]
   end
 end
 
-task distro: (WSL_SETUP[:skip_location] ? :install_distro
-                                        : WSL_SETUP[:location_disk])
-
-task :install_wsl do
-  # install wsl
-  sh "wsl --install --no-distribution"
-  puts "Reboot after 10secs"
-  sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
-  exit # no return
+task :wsl do
+  wsl_status = get_wsl_status
+  if wsl_status.nil?
+    # install wsl
+    sh "wsl --install --no-distribution"
+    puts "Reboot after 10secs"
+    sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
+    exit # no return
+  elsif WSL_SETUP[:version] == 1 && !wsl_status[:enable_wsl1]
+    # NOTE: 下記コマンドでは有効にならない
+    #   wsl --install --enable-wsl1 --no-distribution
+    # install Microsoft-Windows-Subsystem-Linux feature
+    sh "dism /online /enable-feature " \
+       "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    puts "Reboot after 10secs"
+    sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
+    exit # no return
+  end
 end
 
-task :install_feature do
-  # NOTE: 下記コマンドでは有効にならない
-  #   wsl --install --enable-wsl1 --no-distribution
-  # install Microsoft-Windows-Subsystem-Linux feature
-  sh "dism /online /enable-feature " \
-     "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
-  puts "Reboot after 10secs"
-  sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
-  exit # no return
-end
-
-task :update_wsl do
-  sh "wsl --update"
-end
-
-task :install_distro do
-  wsl = wsl_status
-  task_name =
-    if wsl.nil?
-      "install_wsl"
-    elsif WSL_SETUP[:version] == 1 && !wsl[:enable_wsl1]
-      "install_feature"
-    else
-      "update_wsl"
+task distro: :wsl do
+  unless get_wsl_list.key?(WSL_SETUP[:name])
+    install_option = String.new
+    install_option << " --install #{WSL_SETUP[:distro]}"
+    unless WSL_SETUP[:skip_location]
+      install_option << " --location #{WSL_SETUP[:location_disk]}"
     end
-  Rake::Task[task_name].invoke
-
-  unless wsl_list.key?(WSL_SETUP[:distro])
-    sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
+    if WSL_SETUP[:name] != WSL_SETUP[:distro]
+      install_option << " --name #{WSL_SETUP[:name]}"
+    end
+    install_option << " --no-launch"
+    install_option << " --version #{WSL_SETUP[:version]}"
+    sh "wsl --install #{install_option}"
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:distro]}"
     else
-      distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
-      sh "start /wait #{distro_exe} install --root"
-    end
-  end
-end
-
-file WSL_SETUP[:location_disk] do
-  Rake::Task[:install_distro].invoke
-  sh "wsl --terminate #{WSL_SETUP[:distro]}"
-  sh "wsl --shutdown"
-  if WSL_SETUP[:name] == WSL_SETUP[:distro]
-    sh "wsl --manage #{WSL_SETUP[:distro]} --move #{WSL_SETUP[:location]}"
-    if wsl_list[WSL_SETUP[:name]][:version] != WSL_SETUP[:version]
-      sh "wsl --set-version #{WSL_SETUP[:distro]} #{WSL_SETUP[:version]}"
-    end
-  else
-    if WSL_SETUP[:version] == 1
-    sh "wsl --export #{WSL_SETUP[:distro]} - |" \
-       "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
-       "--version #{WSL_SETUP[:version]}"
-    else
-      sh "wsl --export #{WSL_SETUP[:distro]} - --vhd |" \
-      "wsl --import #{WSL_SETUP[:name]} #{WSL_SETUP[:location]} - " \
-      "--version #{WSL_SETUP[:version]} --vhd"
-    end
-    list = wsl_list
-    default_uid = list[WSL_SETUP[:distro]][:uid]
-    Win32::Registry::HKEY_CURRENT_USER
-      .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
-      reg.open(list[WSL_SETUP[:name]][:key],
-        Win32::Registry::KEY_READ | Win32::Registry::KEY_WRITE) do |sub|
-        sub["DefaultUid"] = default_uid
+      Win32::Registry::HKEY_CURRENT_USER
+        .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
+        reg.open(get_wsl_list[WSL_SETUP[:name]][:key],
+          Win32::Registry::KEY_READ | Win32::Registry::KEY_WRITE) do |sub|
+          sub["RunOOBE"] = 0
+        end
       end
     end
-    sh "wsl --unregister #{WSL_SETUP[:distro]}"
   end
 end
 
@@ -305,9 +269,11 @@ task apt: :distro
 
 desc "Update WSL distribution"
 task update: :apt do
-  wsl_run("apt update -y", env: proxy_env, user: "root")
-  wsl_run("apt upgrade -y", env: proxy_env, user: "root")
-  wsl_run("apt autoremove -y", env: proxy_env, user: "root")
+  unless WSL_SETUP[:skip_update]
+    wsl_run("apt update -y", env: proxy_env, user: "root")
+    wsl_run("apt upgrade -y", env: proxy_env, user: "root")
+    wsl_run("apt autoremove -y", env: proxy_env, user: "root")
+  end
 end
 
 task ansible_playbook: %i[ansible ansible_playbook_root] do
@@ -315,9 +281,7 @@ task ansible_playbook: %i[ansible ansible_playbook_root] do
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config])}"
   end
-  if WSL_SETUP[:input_user]
-    option << " -e user_default=#{wsl_whoami} -K"
-  end
+  option << " -e user_default=#{wsl_whoami} -K" if WSL_SETUP[:input_user]
   wsl_run("ansible-playbook all.yml #{option}", cd: WSL_SETUP[:playbooks])
 end
 
@@ -326,15 +290,13 @@ task ansible_playbook_root: :ansible do
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config], user: 'root')}"
   end
-  if WSL_SETUP[:input_user]
-    option << " -e user_default=#{wsl_whoami}"
-  end
+  option << " -e user_default=#{wsl_whoami}" if WSL_SETUP[:input_user]
 
   wsl_run("ansible-playbook root.yml #{option}", cd: WSL_SETUP[:playbooks],
     user: "root")
   sh "wsl --terminate #{WSL_SETUP[:name]}"
 end
 
-task ansible: [:apt, (:update unless WSL_SETUP[:skip_update])].compact do
+task ansible: %i[apt update].compact do
   wsl_run("apt install ansible -y", env: proxy_env, user: "root")
 end
