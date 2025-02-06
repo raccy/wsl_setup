@@ -18,14 +18,14 @@
     exclusive: false
     section: user
     option: default
-    value: '{{ user_default_user }}'
+    value: '{{ user_default_user.name }}'
   when: user_default is not defined
 
 - name: Allow the default user to run sudo all without password
   become: true
   community.general.sudoers:
     name: 10-allow-default-user
-    user: '{{ user_default_user }}'
+    user: '{{ user_default_user.name }}'
     runas: ALL
     commands: ALL
     state: '{{ user_sudo_without_password | ternary("present", "absent") }}'
