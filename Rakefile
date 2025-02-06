@@ -225,7 +225,7 @@ task distro: (WSL_SETUP[:skip_location] ? :install_distro
 
 task :install_wsl do
   # install wsl
-  sh "wsl --install --no-distribute"
+  sh "wsl --install --no-distribution"
   puts "Reboot after 10secs"
   sh "shutdown /r /t 10 /c \"Reboot for wsl installing.\""
   exit # no return
