@@ -232,6 +232,8 @@ task :install_wsl do
 end
 
 task :install_feature do
+  # NOTE: 下記コマンドでは有効にならない
+  #   wsl --install --enable-wsl1 --no-distribution
   # install Microsoft-Windows-Subsystem-Linux feature
   sh "dism /online /enable-feature " \
      "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
@@ -257,11 +259,11 @@ task :install_distro do
   Rake::Task[task_name].invoke
 
   unless wsl_list.key?(WSL_SETUP[:distro])
+    sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
     if WSL_SETUP[:input_user]
-      sh "wsl --install #{WSL_SETUP[:distro]}"
+      sh "wsl --distribution #{WSL_SETUP[:distro]}"
     else
       distro_exe = DISTRO_EXE_MAP.fetch(WSL_SETUP[:distro])
-      sh "wsl --install #{WSL_SETUP[:distro]} --no-launch"
       sh "start /wait #{distro_exe} install --root"
     end
   end
