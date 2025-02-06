@@ -6,30 +6,12 @@ require "open3"
 require "yaml"
 require "win32/registry"
 
-DISTRO_EXE_MAP = {
-  "AlmaLinux-8" => "almalinux8.exe",
-  "AlmaLinux-9" => "almalinux9.exe",
-  "Debian" => "debian.exe",
-  "OracleLinux_7_9" => "OracleLinux79.exe",
-  "OracleLinux_8_7" => "OracleLinux87.exe",
-  "OracleLinux_9_1" => "OracleLinux91.exe",
-  "SUSE-Linux-Enterprise-15-SP5" => "SUSE-Linux-Enterprise-15-SP5.exe",
-  "SUSE-Linux-Enterprise-15-SP6" => "SUSE-Linux-Enterprise-15-SP6.exe",
-  "Ubuntu" => "ubuntu.exe",
-  "Ubuntu-18.04" => "ubuntu1804.exe",
-  "Ubuntu-20.04" => "ubuntu2004.exe",
-  "Ubuntu-22.04" => "ubuntu2204.exe",
-  "Ubuntu-24.04" => "ubuntu2404.exe",
-  "kali-linux" => "kali.exe",
-  "openSUSE-Leap-15.6" => "openSUSE-Leap-15.6.exe",
-  "openSUSE-Tumbleweed" => "openSUSE-Tumbleweed.exe",
-}.freeze
-
 WSL_SETUP = {
   name: nil,
   distro: "Ubuntu",
   version: 2,
   input_user: false,
+  require_password: false,
   work: ".",
   location: "image",
   config: "wsl_setup.yml",
@@ -291,7 +273,8 @@ task ansible_playbook: %i[ansible ansible_playbook_root] do
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config])}"
   end
-  option << " -e user_default=#{wsl_whoami} -K" if WSL_SETUP[:input_user]
+  option << " -e user_default=#{wsl_whoami}" if WSL_SETUP[:input_user]
+  option << " -K" if WSL_SETUP[:require_password]
   wsl_run("ansible-playbook all.yml #{option}", cd: WSL_SETUP[:playbooks])
 end
 

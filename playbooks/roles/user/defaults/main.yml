@@ -4,17 +4,9 @@ user_name: '{{ user_default | default("user") }}'
 user_group: '{{ user_name }}'
 user_groups:
   - adm
-  - dialout
-  - cdrom
-  - floppy
   - sudo
-  - audio
-  - dip
-  - video
-  - plugdev
   - users
-  - netdev
 user_shell: /bin/bash
 # user_home: '/home/{{ user_name }}'
 # user_comment: ""
-user_sudo_without_password: true
+user_sudo_without_password: '{{ wsl.require_password | default(false) | ternary(false, true) }}'

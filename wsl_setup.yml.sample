@@ -4,6 +4,7 @@ wsl_setup:
   # distro: "Ubuntu"
   # version: 2
   # input_user: false
+  # require_password: false
   # work: "."
   # location: "image"
   # config: "wsl_setup.yml"
