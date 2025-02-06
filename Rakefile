@@ -225,7 +225,7 @@ task create: %i[distro ansible_playbook]
 
 desc "Destroy WSL distribution"
 task :destroy do
-  if wsl_list.key?(WSL_SETUP[:name])
+  if get_wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
     rmdir WSL_SETUP[:location] unless WSL_SETUP[:skip_location]
   end
@@ -263,9 +263,9 @@ task distro: :wsl do
     end
     install_option << " --no-launch"
     install_option << " --version #{WSL_SETUP[:version]}"
-    sh "wsl --install #{install_option}"
+    sh "wsl #{install_option}"
     if WSL_SETUP[:input_user]
-      sh "wsl --distribution #{WSL_SETUP[:distro]}"
+      sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
       key = get_wsl_registry[WSL_SETUP[:name]][:key]
       open_lxss_registry(key, "w") do |reg|
