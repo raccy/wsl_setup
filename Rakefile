@@ -160,7 +160,7 @@ def proxy_env
   WSL_SETUP.slice(:http_proxy, :https_proxy)
 end
 
-def get_wsl_status
+def get_wsl_status # rubocop: disable Naming/AccessorMethodName
   result = run_capture("wsl --status", encoding: Encoding::UTF_16LE)
   return if result.nil?
 
@@ -172,37 +172,50 @@ def get_wsl_status
   }
 end
 
-def get_wsl_list
+def get_wsl_list # rubocop: disable Naming/AccessorMethodName
   result = run_capture("wsl --list --all --verbose",
     encoding: Encoding::UTF_16LE)
   return {} if result.nil?
 
-  list = result.lines.drop(1)&.to_h do |line|
+  parse_wsl_list(result).to_h { |d| [d[:name], d] }
+end
+
+def parse_wsl_list(list)
+  list.lines.drop(1).map do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
-      [m[2], {
-        default: m[1] == "*",
-        name: m[2],
-        state: m[3],
-        version: m[4].to_i,
-      }]
+      { default: m[1] == "*", name: m[2], state: m[3], version: m[4].to_i }
     else
       raise "invalid wsl list line: #{line}"
     end
   end
+end
 
-  Win32::Registry::HKEY_CURRENT_USER
-    .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
+def get_wsl_registry # rubocop: disable Naming/AccessorMethodName
+  list = {}
+  open_lxss_registry do |reg|
     reg.each_key do |key, _wtime|
       reg.open(key) do |sub|
-        name = sub["DistributionName"]
-        list[name][:key] = key
-        list[name][:uid] = sub["DefaultUid"]
-        list[name][:path] = sub["BasePath"]
+        list[sub["DistributionName"]] =
+          { key: key, uid: sub["DefaultUid"], path: sub["BasePath"] }
       end
     end
   end
-
   list
+end
+
+def open_lxss_registry(subkey = nil, mode: "r", &block)
+  key = 'Software\Microsoft\Windows\CurrentVersion\Lxss'
+  key += "\\#{subkey}" if subkey
+  desired = calc_mask(mode)
+  Win32::Registry::HKEY_CURRENT_USER.open(key, desired, &block)
+end
+
+def calc_mask(mode)
+  desired = 0
+  desired |= Win32::Registry::KEY_READ if mode.include?("r")
+  desired |= Win32::Registry::KEY_WRITE if mode.include?("w")
+  desired |= Win32::Registry::KEY_EXECUTE if mode.include?("x")
+  desired
 end
 
 task default: :create
@@ -254,12 +267,9 @@ task distro: :wsl do
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:distro]}"
     else
-      Win32::Registry::HKEY_CURRENT_USER
-        .open('Software\Microsoft\Windows\CurrentVersion\Lxss') do |reg|
-        reg.open(get_wsl_list[WSL_SETUP[:name]][:key],
-          Win32::Registry::KEY_READ | Win32::Registry::KEY_WRITE) do |sub|
-          sub["RunOOBE"] = 0
-        end
+      key = get_wsl_registry[WSL_SETUP[:name]][:key]
+      open_lxss_registry(key, "w") do |reg|
+        reg["RunOOBE"] = 0
       end
     end
   end
