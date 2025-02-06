@@ -253,7 +253,7 @@ task distro: :wsl do
       sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
       key = get_wsl_registry[WSL_SETUP[:name]][:key]
-      open_lxss_registry(key, "w") do |reg|
+      open_lxss_registry(key, mode: "w") do |reg|
         reg["RunOOBE"] = 0
       end
     end
