@@ -225,10 +225,13 @@ task :wsl do
     # NOTE: 下記コマンドでは有効にならない
     #   wsl --install --enable-wsl1 --no-distribution
     # install Microsoft-Windows-Subsystem-Linux feature
-    sh "dism /online /enable-feature " \
-       "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
-    puts "Reboot after 10secs"
-    sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
+    # TODO: 管理者権限がないため、下記は
+    # sh "dism /online /enable-feature " \
+    #    "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    # puts "Reboot after 10secs"
+    # sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
+    puts "WSL1 を使用するには、\"Linux 用 Windows サブシステム\" オプション " \
+      "コンポーネントを有効にしてください。"
     exit # no return
   end
 end
