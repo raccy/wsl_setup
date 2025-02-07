@@ -1,0 +1,15 @@
+- name: Install python mysql for ansible
+  become: true
+  ansible.builtin.apt:
+    state: present
+    name: python3-pymysql
+
+- name: Create default user as superuser
+  become: true
+  community.mysql.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    login_user: root
+    state: present
+    name: '{{ user_default_user.name }}'
+    host: localhost
+    priv: '*.*:ALL'

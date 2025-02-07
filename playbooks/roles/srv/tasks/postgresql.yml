@@ -1,11 +1,10 @@
-- name: apt install python psycopg2 for ansible
+- name: Install python psycopg2 for ansible
   become: true
-  apt:
+  ansible.builtin.apt:
     state: present
     name: python3-psycopg2
-  when: ansible_pkg_mgr == "apt"
 
-- name: create default user as superuser
+- name: Create default user as superuser
   become: true
   become_user: postgres
   community.postgresql.postgresql_user:
