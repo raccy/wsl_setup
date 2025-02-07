@@ -10,6 +10,19 @@
   loop:
     - common
 
+# TODO: 個別設定のために起動しておく
+- name: 'Start service for {{ srv_service_name }}'
+  become: true
+  ansible.builtin.systemd_service:
+    name: '{{ srv_service.service }}'
+    state: started
+  when: srv_service.service is defined
+
+- name: 'Task {{ srv_service_name }}'
+  ansible.builtin.include_tasks:
+    file: '{{ srv_service_name }}.yml'
+  when: lookup("file", srv_service_name ~ ".yml", errors="ignore") is not none
+
 # TODO: 有効にするか選べるようにしたい。
 - name: 'Stop and disable service for {{ srv_service_name }}'
   become: true
@@ -27,3 +40,4 @@
   when:
     - srn_service.lang is defined
     - srv_service.lang[itme] is defiend
+
