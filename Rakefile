@@ -278,7 +278,8 @@ task ansible_playbook: %i[ansible ansible_playbook_root] do
   end
   option << " -e user_default=#{wsl_whoami}" if WSL_SETUP[:input_user]
   option << " -K" if WSL_SETUP[:require_password]
-  wsl_run("ansible-playbook all.yml #{option}", cd: WSL_SETUP[:playbooks])
+  env = {ANSIBLE_SHELL_ALLOW_WORLD_READABLE_TEMP: "1"}
+  wsl_run("ansible-playbook all.yml #{option}", env:, cd: WSL_SETUP[:playbooks])
 end
 
 task ansible_playbook_root: :ansible do
