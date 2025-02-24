@@ -10,4 +10,4 @@
 
 - name: Setting systemd
   ansible.builtin.set_fact:
-    wsl_systemd: '{{ wsl_run_ps_1.stdout_lines | first == "systemd" }}'
+    wsl_systemd: '{{ wsl_run_ps_1.stdout is match "systemd" }}'
