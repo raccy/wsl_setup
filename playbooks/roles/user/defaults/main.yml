@@ -9,4 +9,4 @@ user_groups:
 user_shell: /bin/bash
 # user_home: '/home/{{ user_name }}'
 # user_comment: ""
-user_sudo_without_password: '{{ wsl.require_password | default(false) | ternary(false, true) }}'
+user_sudo_without_password: '{{ wsl_setup.require_password | default(false) | ternary(false, true) }}'
