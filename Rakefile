@@ -20,6 +20,8 @@ WSL_SETUP = {
   proxy: nil,
   http_proxy: ENV.fetch("http_proxy", nil),
   https_proxy: ENV.fetch("http_proxy", nil),
+  ftp_proxy: ENV.fetch("ftp_proxy", nil),
+  no_proxy: ENV.fetch("no_proxy", nil),
   skip_location: false,
   skip_update: false,
 }.to_h do |name, default|
@@ -48,7 +50,7 @@ in 2 then "#{WSL_SETUP[:location]}/ext4.vhdx"
 end
 
 if WSL_SETUP[:proxy]
-  %i[http_proxy https_proxy].each do |name|
+  %i[http_proxy https_proxy ftp_proxy].each do |name|
     WSL_SETUP[name] ||= WSL_SETUP[:proxy]
   end
 end
@@ -139,7 +141,7 @@ def check_mode(mode)
 end
 
 def proxy_env
-  WSL_SETUP.slice(:http_proxy, :https_proxy)
+  WSL_SETUP.slice(:http_proxy, :https_proxy, :ftp_proxy, :no_proxy)
 end
 
 def get_wsl_status # rubocop: disable Naming/AccessorMethodName

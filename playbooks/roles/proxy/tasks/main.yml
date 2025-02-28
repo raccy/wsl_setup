@@ -12,6 +12,21 @@
     - proxy_env is not defined
     - proxy_http is defined or proxy_https is defined
 
+- name: Setting proxy_env var from wsl_setup
+  ansible.builtin.set_fact:
+    proxy_env:
+      http_proxy: '{{ wsl_setup.http_proxy | default(wsl_setup.proxy | default(omit)) }}'
+      https_proxy: '{{ wsl_setup.https_proxy | default(wsl_setup.proxy | default(omit)) }}'
+      ftp_proxy: '{{ wsl_setup.ftp_proxy | default(wsl_setup.proxy | default(omit)) }}'
+      no_proxy: '{{ wsl_setup.no_proxy | default(omit) }}'
+  when:
+    - proxy_env is not defined
+    - >-
+      wsl_setup.proxy is defined or
+        wsl_setup.http_proxy is defined or
+        wsl_setup.https_proxy is defined or
+        wsl_setup.ftp_proxy is defined
+
 - name: Setting proxy_env var from win_env
   ansible.builtin.set_fact:
     proxy_env:
@@ -21,7 +36,10 @@
       no_proxy: '{{ win_env.no_proxy | default(omit) }}'
   when:
     - proxy_env is not defined
-    - win_env.http_proxy is defined or win_env.https_proxy is defined
+    - >-
+      win_env.http_proxy is defined or
+        win_env.https_proxy is defined or
+        win_env.ftp_proxy is defined
 
 - name: Setting proxy_url_from_win_proxy
   ansible.builtin.set_fact:
