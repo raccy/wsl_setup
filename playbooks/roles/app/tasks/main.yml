@@ -4,3 +4,10 @@
     name: '{{ item }}'
     install_recommends: '{{ item not in app_no_install_recommends }}'
   loop: '{{ app_list }}'
+
+- name: Select editor
+  become: true
+  community.general.alternatives:
+    name: '{{ item.key }}'
+    path: '{{ item.value }}'
+  loop: '{{ app_alternatives | dict2items }}'

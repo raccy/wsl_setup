@@ -1,1 +1,4 @@
 app_list: []
+app_alternatives: {}
+# app_alternatives:
+#   editor: /usr/bin/vim.basic
