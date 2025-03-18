@@ -13,3 +13,12 @@
     state: present
     name: '{{ user_default_user.name }}'
     role_attr_flags: SUPERUSER
+
+- name: Create database for default user as superuser
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    login_unix_socket: /run/postgresql
+    login_user: postgres
+    state: present
+    name: '{{ user_default_user.name }}'
