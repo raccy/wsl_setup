@@ -1,0 +1,23 @@
+- name: Task win_path in wsl
+  ansible.builtin.include_role:
+    name: wsl
+    tasks_from: wsl_path
+  vars:
+    wsl_win_path: '{{ win_env["VAGRANT_HOME"] }}'
+  when: win_env["VAGRANT_HOME"] is defined
+
+- name: Setting vagran_home
+  ansible.builtin.set_fact:
+    vagrant_home: '{{ wsl_wsl_path }}'
+  when: win_env["VAGRANT_HOME"] is defined
+
+- name: Block bin in bashrc
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    marker: '# {mark} ANSIBLE MANAGED BLOCK vagrant'
+    block: |
+      export VAGRANT_WSL_ENABLE_WINDOWS_ACCESS=1
+      {% if vagrant_home is defined %}
+      export VAGRANT_WSL_WINDOWS_ACCESS_USER_HOME_PATH={{ vagrant_home | dirname }}
+      {% endif %}
+  when: home_bin_path
