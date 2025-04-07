@@ -42,4 +42,4 @@
 - name: Task wsl
   ansible.builtin.include_tasks:
     file: wsl.yml
-  when: vagarnt_wsl
+  when: vagrant_wsl
