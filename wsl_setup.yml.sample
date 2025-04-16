@@ -27,7 +27,8 @@ wsl_setup:
 # srv: false
 # gui: false
 # git: false
-# vagrant: false
 # vscode: false
 # anyenv: false
+# docker: false
+# vagrant: false
 # home: false

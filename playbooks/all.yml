@@ -19,6 +19,8 @@
       when: vscode
     - role: anyenv
       when: anyenv
+    - role: docker
+      when: docker
     - role: vagrant
       when: vagrant
     - role: home
