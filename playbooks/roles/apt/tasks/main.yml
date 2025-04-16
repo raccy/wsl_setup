@@ -13,7 +13,7 @@
 
 - name: Set apt_architecture
   ansible.builtin.set_fact:
-    apt_architecture: apt_run_dpkg_print_architecture.stdout
+    apt_architecture: '{{ apt_run_dpkg_print_architecture.stdout }}'
 
 - name: Set apt_release
   ansible.builtin.set_fact:
