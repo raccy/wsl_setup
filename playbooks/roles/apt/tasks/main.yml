@@ -17,4 +17,4 @@
 
 - name: Set apt_release
   ansible.builtin.set_fact:
-    apt_architecture: '{{ ansible_distribution_release }}'
+    apt_release: '{{ ansible_distribution_release }}'
