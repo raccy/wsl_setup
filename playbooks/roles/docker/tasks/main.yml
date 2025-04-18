@@ -34,3 +34,30 @@
       - docker-compose-plugin
     state: present
     update_cache: true
+
+- name: Add default user to docker group
+  become: true
+  ansible.builtin.user:
+    name: '{{ user_default_user.name }}'
+    groups: docker
+    append: true
+
+- name: Make dockre.service.d diretory
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    owner: root
+    group: root
+    mode: '0755'
+    state: directory
+  when: proxy_env
+
+- name: Copy template proxy config for docker service
+  become: true
+  ansible.builtin.template:
+    src: docker.service.d/docker_proxy.conf.j2
+    dest: /etc/systemd/system/docker.service.d/docker_proxy.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: proxy_env

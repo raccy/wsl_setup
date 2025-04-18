@@ -1,0 +1,7 @@
+[Service]
+{% if proxy_env.http_proxy | default("") %}
+Environment = "HTTP_PROXY={{ proxy_env.http_proxy }}"
+{% endif %}
+{% if proxy_env.https_proxy | default("") %}
+Environment = "HTTPS_PROXY={{ proxy_env.https_proxy }}"
+{% endif %}
