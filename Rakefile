@@ -211,7 +211,10 @@ desc "Destroy WSL distribution"
 task :destroy do
   if get_wsl_list.key?(WSL_SETUP[:name])
     sh "wsl --unregister #{WSL_SETUP[:name]}"
-    rmdir WSL_SETUP[:location] unless WSL_SETUP[:skip_location]
+    sleep 1 # wait for unregister
+    if !WSL_SETUP[:skip_location] && FileTest.exist?(WSL_SETUP[:location])
+      rmdir WSL_SETUP[:location]
+    end
   end
 end
 
@@ -251,6 +254,7 @@ task distro: :wsl do
     install_option << " --no-launch"
     install_option << " --version #{WSL_SETUP[:version]}"
     sh "wsl #{install_option}"
+    sleep 1 # wait for register
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
