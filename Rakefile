@@ -178,9 +178,11 @@ def get_wsl_registry # rubocop: disable Naming/AccessorMethodName
   list = {}
   open_lxss_registry do |reg|
     reg.each_key do |key, _wtime|
-      reg.open(key) do |sub|
-        list[sub["DistributionName"]] =
-          { key: key, uid: sub["DefaultUid"], path: sub["BasePath"] }
+      if key =~ /^\{[\h-]+\}$/
+        reg.open(key) do |sub|
+          list[sub["DistributionName"]] =
+            { key: key, uid: sub["DefaultUid"], path: sub["BasePath"] }
+        end
       end
     end
   end
@@ -254,7 +256,6 @@ task distro: :wsl do
     install_option << " --no-launch"
     install_option << " --version #{WSL_SETUP[:version]}"
     sh "wsl #{install_option}"
-    sleep 1 # wait for register
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
@@ -270,11 +271,9 @@ task apt: :distro
 
 desc "Update WSL distribution"
 task update: :apt do
-  unless WSL_SETUP[:skip_update]
-    wsl_run("apt update -y", env: proxy_env, user: "root")
-    wsl_run("apt upgrade -y", env: proxy_env, user: "root")
-    wsl_run("apt autoremove -y", env: proxy_env, user: "root")
-  end
+  wsl_run("apt update -y", env: proxy_env, user: "root")
+  wsl_run("apt upgrade -y", env: proxy_env, user: "root") unless WSL_SETUP[:skip_update]
+  wsl_run("apt autoremove -y", env: proxy_env, user: "root")
 end
 
 task ansible_playbook: %i[ansible ansible_playbook_root] do
