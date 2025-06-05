@@ -4,6 +4,16 @@
     name: '{{ gui_desktop }}'
   when: gui_desktop
 
+# https://github.com/microsoft/wslg/issues/960
+- name: Stop and disable serivce for GDM
+  become: true
+  ansible.builtin.service:
+    name: gdm
+    enabled: false
+    state: stopped
+  loop: '{{ gui_packages }}'
+  when: gui_desktop
+
 - name: Install GUI package
   become: true
   ansible.builtin.apt:
