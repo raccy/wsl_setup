@@ -5,7 +5,7 @@
 # TODO: パッケージの種類を選べるようにしたい。
 - name: 'Install packages for {{ srv_service_name }}'
   become: true
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: '{{ srv_service.package[item] }}'
   loop:
     - common
@@ -34,7 +34,7 @@
 
 - name: 'Install lang packages for {{ srv_service_name }}'
   become: true
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: '{{ srv_service.lang[itme] }}'
   loop: '{{ srv_langs }}'
   when:

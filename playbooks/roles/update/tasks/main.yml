@@ -1,4 +1,4 @@
-- name: Update all packages
+- name: Update all packages by apt
   become: true
   ansible.builtin.apt:
     name: '{{ update_target }}'
@@ -6,3 +6,21 @@
     update_cache: '{{ update_update_cache }}'
     only_upgrade: '{{ update_only_upgrade }}'
     autoremove: '{{ update_autoremove }}'
+  when: ansible_pkg_mgr == "apt"
+
+- name: Update all packages by dnf
+  become: true
+  ansible.builtin.dnf:
+    name: '{{ update_target }}'
+    state: latest
+    update_cache: '{{ update_update_cache }}'
+    update_only: '{{ update_only_upgrade }}'
+  when: ansible_pkg_mgr == "dnf"
+
+- name: Autoremove packages by dnf
+  become: true
+  ansible.builtin.dnf:
+    autoremove: true
+  when:
+    - ansible_pkg_mgr == "dnf"
+    - update_autoremove

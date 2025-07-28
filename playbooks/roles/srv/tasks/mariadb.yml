@@ -1,6 +1,6 @@
 - name: Install python mysql for ansible
   become: true
-  ansible.builtin.apt:
+  ansible.builtin.package:
     state: present
     name: python3-pymysql
 

@@ -1,34 +1,69 @@
 # https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 anyenv_pyenv_packages:
-  - build-essential
-  - curl
-  - git
-  - libbz2-dev
-  - libffi-dev
-  - liblzma-dev
-  - libncurses-dev
-  - libreadline-dev
-  - libsqlite3-dev
-  - libssl-dev
-  - libxml2-dev
-  - libxmlsec1-dev
-  - tk-dev
-  - xz-utils
-  - zlib1g-dev
-# https://github.com/rbenv/ruby-build/wiki#ubuntudebianmint
-anyenv_rbenv_packages:
-  - autoconf
-  - build-essential
-  - libdb-dev
-  - libffi-dev
-  - libgdbm-dev
-  - libgdbm6
-  - libgmp-dev
-  - libncurses-dev
-  - libreadline-dev
-  - libssl-dev
-  - libyaml-dev
-  - patch
-  - rustc
-  - uuid-dev
-  - zlib1g-dev
+  apt:
+    - build-essential
+    - curl
+    - git
+    - libbz2-dev
+    - libffi-dev
+    - liblzma-dev
+    - libncurses-dev
+    - libreadline-dev
+    - libsqlite3-dev
+    - libssl-dev
+    - libxml2-dev
+    - libxmlsec1-dev
+    - tk-dev
+    - xz-utils
+    - zlib1g-dev
+  dnf:
+    - make
+    - gcc
+    - patch
+    - zlib-devel
+    - bzip2
+    - bzip2-devel
+    - readline-devel
+    - sqlite
+    - sqlite-devel
+    - openssl-devel
+    - tk-devel
+    - libffi-devel
+    - xz-devel
+    - libuuid-devel
+    - gdbm-libs
+    - libnsl2
+
+# https://github.com/rbenv/ruby-build/wiki#suggested-build-environment
+anyenv_rbenv_apt_packages:
+  apt:
+    - autoconf
+    - build-essential
+    - libdb-dev
+    - libffi-dev
+    - libgdbm-dev
+    - libgdbm6
+    - libgmp-dev
+    - libncurses-dev
+    - libreadline-dev
+    - libssl-dev
+    - libyaml-dev
+    - patch
+    - rustc
+    - uuid-dev
+    - zlib1g-dev
+  dnf:
+    - autoconf
+    - gcc
+    - patch
+    - bzip2
+    - openssl-devel
+    - libffi-devel
+    - readline
+    - zlib-devel
+    - gdbm
+    - ncurses-devel
+    - tar
+    - perl-FindBin
+    - libyaml-devel
+    - rust

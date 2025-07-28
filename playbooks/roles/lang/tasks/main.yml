@@ -1,7 +1,14 @@
-- name: Install language package
+- name: Install language package by apt
   become: true
   ansible.builtin.apt:
     name: 'language-pack-{{ lang_package }}'
+  when: ansible_pkg_mgr == "apt"
+
+- name: Install language package by dnf
+  become: true
+  ansible.builtin.dnf:
+    name: 'language-pack-{{ lang_package }}'
+  when: ansible_pkg_mgr == "dnf"
 
 - name: Create locale
   become: true
@@ -26,9 +33,11 @@
       lang_run_localectl_status.stdout_lines | first
         is not search("LANG=" ~ lang_locale)
 
+# FIXME: dnfは日本語manが無い？
 - name: Install manual packages
   become: true
   ansible.builtin.apt:
     name:
       - 'manpages-{{ lang_package }}'
       - 'manpages-{{ lang_package }}-dev'
+  when: ansible_pkg_mgr == "apt"

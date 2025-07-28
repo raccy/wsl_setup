@@ -1,4 +1,4 @@
-- name: Add hashicorp gpg 
+- name: Add hashicorp gpg for apt
   become: true
   ansible.builtin.command:
     argv:
@@ -9,8 +9,9 @@
       - '{{ apt_keyrings_dir }}/hashicorp.asc'
     creates: '{{ apt_keyrings_dir }}/hashicorp.asc'
   environment: '{{ proxy_env }}'
+  when: ansible_pkg_mgr == "apt"
 
-- name: Add hashicorp repository
+- name: Add hashicorp repository for apt
   become: true
   ansible.builtin.apt_repository:
     repo: >-
@@ -22,13 +23,34 @@
       main
     filename: hashicorp
     state: present
+  when: ansible_pkg_mgr == "apt"
 
-- name: Install vagrant
+- name: Install vagrant by apt
   become: true
   ansible.builtin.apt:
     name: vagrant
     state: present
     update_cache: true
+  when: ansible_pkg_mgr == "apt"
+
+- name: Add hashicorp repository for dnf
+  become: true
+  ansible.builtin.command:
+    argv:
+      - dnf
+      - config-manager
+      - --add-repo
+      - https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+  changed_when: true
+  when: ansible_pkg_mgr == "dnf"
+
+- name: Install vagrant by dnf
+  become: true
+  ansible.builtin.dnf:
+    name: vagrant
+    state: present
+    update_cache: true
+  when: ansible_pkg_mgr == "dnf"
 
 - name: Task wsl
   ansible.builtin.include_tasks:

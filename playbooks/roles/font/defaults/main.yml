@@ -1,6 +1,6 @@
 font_windows: true
-font_list:
-  - ubuntu
+font_list: []
+  # - ubuntu
   # - ipaexfont
   # - ipafont
   # - noto

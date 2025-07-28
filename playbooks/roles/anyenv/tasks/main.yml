@@ -31,12 +31,23 @@
 
 - name: Install packages for pyenv
   become: true
-  ansible.builtin.apt:
-    name: '{{ anyenv_pyenv_packages }}'
+  ansible.builtin.package:
+    name: '{{ anyenv_pyenv_packages[ansible_pkg_mgr] }}'
   when: '"pyenv" in anyenv_envs'
 
-- name: Install packages for rbenv
+- name: Enable crb repo for rbenv
   become: true
-  ansible.builtin.apt:
-    name: '{{ anyenv_rbenv_packages }}'
+  ansible.builtin.command:
+    cmd: dnf config-manager --set-enabled crb
+  register: result_dnf_config_manager
+  changed_when: result_dnf_config_manager.rc == 0
+  when:
+    - '"rbenv" in anyenv_envs'
+    - ansible_os_family == "RedHat"
+    - ansible_distribution_major_version | int >= 9
+
+- name: Install apt packages for rbenv
+  become: true
+  ansible.builtin.package:
+    name: '{{ anyenv_rbenv_packages[ansible_pkg_mgr] }}'
   when: '"rbenv" in anyenv_envs'

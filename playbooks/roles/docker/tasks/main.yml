@@ -1,3 +1,10 @@
+# TODO: dnfは未対応
+
+- name: Fail without apt
+  ansible.builtin.fail:
+    msg: support apt only
+  when: ansible_pkg_mgr != "apt"
+
 - name: Add docker gpg 
   become: true
   ansible.builtin.command:

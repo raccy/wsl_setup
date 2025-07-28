@@ -266,10 +266,6 @@ task distro: :wsl do
     # install_option << " --version #{WSL_SETUP[:version]}"
     sh "wsl #{install_option}"
 
-    if WSL_SETUP[:version].to_i == 1
-      sh "wsl --set-version #{WSL_SETUP[:name]} 1"
-    end
-
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
@@ -277,6 +273,11 @@ task distro: :wsl do
       open_lxss_registry(key, mode: "w") do |reg|
         reg["RunOOBE"] = 0
       end
+    end
+
+    if WSL_SETUP[:version].to_i == 1
+      sh "wsl --set-version #{WSL_SETUP[:name]} 1"
+      wsl_run("chmod 644 /etc/resolv.conf", user: "root")
     end
   end
 end
@@ -302,6 +303,15 @@ task update: :pkg do
 end
 
 task ansible_playbook: %i[ansible ansible_playbook_root] do
+  pkg_mgr = wsl_pkg_mgr
+  if pkg_mgr == "dnf"
+    %w[community.general community.mysql community.postgresql]
+      .each do |collection|
+      wsl_run("ansible-galaxy collection install #{collection}",
+        env: proxy_env)
+    end
+  end
+
   option = String.new
   if FileTest.file?(WSL_SETUP[:config])
     option << " -e @#{wsl_path(WSL_SETUP[:config])}"
@@ -331,10 +341,7 @@ task ansible: %i[pkg update].compact do
     wsl_run("apt install ansible -y", env: proxy_env, user: "root")
   in "dnf"
     wsl_run("dnf install ansible-core -y", env: proxy_env, user: "root")
-    %w[community.general community.mysql community.postgresql]
-      .each do |collection|
-      wsl_run("ansible-galaxy collection install #{collection}",
-        env: proxy_env, user: "root")
-    end
+    wsl_run("ansible-galaxy collection install community.general",
+      env: proxy_env, user: "root")
   end
 end

@@ -1,9 +1,18 @@
-- name: Install packages
+- name: Install packages by apt
   become: true
   ansible.builtin.apt:
     name: '{{ item }}'
     install_recommends: '{{ item not in app_no_install_recommends }}'
   loop: '{{ app_list }}'
+  when: ansible_pkg_mgr == "apt"
+
+- name: Install packages by dnf
+  become: true
+  ansible.builtin.dnf:
+    name: '{{ item }}'
+    install_weak_deps: '{{ item not in app_no_install_recommends }}'
+  loop: '{{ app_list }}'
+  when: ansible_pkg_mgr == "apt"
 
 - name: Select editor
   become: true

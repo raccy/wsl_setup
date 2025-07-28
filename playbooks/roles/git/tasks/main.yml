@@ -1,11 +1,11 @@
 - name: Install git package
   become: true
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: git
 
 - name: Install git-lfs package
   become: true
-  ansible.builtin.apt:
+  ansible.builtin.package:
     name: git-lfs
   when: git_lfs
 

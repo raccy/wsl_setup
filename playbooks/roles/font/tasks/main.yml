@@ -1,9 +1,20 @@
-- name: Install Font package
+- name: Install Font package by apt
   become: true
   ansible.builtin.apt:
     name: 'fonts-{{ item }}'
   loop: '{{ font_list }}'
-  when: font_list
+  when:
+    - font_list
+    - ansible_pkg_mgr == "apt"
+
+- name: Install Font package by dnf
+  become: true
+  ansible.builtin.dnf:
+    name: '{{ item }}-fonts'
+  loop: '{{ font_list }}'
+  when:
+    - font_list
+    - ansible_pkg_mgr == "dnf"
 
 - name: Make /etc/fonts diretory
   become: true
