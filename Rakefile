@@ -65,15 +65,15 @@ def run_capture(cmd, encoding: Encoding::UTF_8, exception: false, **)
   end
 end
 
-def wsl_run(cmd, capture: false, **opts)
+def wsl_run(cmd, capture: false, exception: true, **opts)
   puts cmd
   wsl_cmd_opts = %i[distro user cd env].to_h { |key| [key, opts.delete(key)] }
   wsl_cmd = generate_wsl_cmd(cmd, **wsl_cmd_opts.compact)
 
   if capture
-    run_capture(wsl_cmd, exception: true, **opts)
+    run_capture(wsl_cmd, exception:, **opts)
   else
-    system(wsl_cmd, **opts, exception: true)
+    system(wsl_cmd, exception:, **opts)
   end
 end
 
@@ -126,6 +126,14 @@ end
 
 def wsl_whoami(**)
   wsl_run("whoami", capture: true, **).force_encoding(Encoding::UTF_8).chomp
+end
+
+def wsl_pkg_mgr(**)
+  mgr_list = %w[apt dnf yum pacman apk zypper]
+  mgr_list.find do |mgr|
+    result = wsl_run("which #{mgr}", **, capture: true, exception: false)
+    result && result.force_encoding(Encoding::UTF_8).chomp.length.positive?
+  end
 end
 
 def check_path(path)
@@ -232,7 +240,7 @@ task :wsl do
     # NOTE: 下記コマンドでは有効にならない
     #   wsl --install --enable-wsl1 --no-distribution
     # install Microsoft-Windows-Subsystem-Linux feature
-    # TODO: 管理者権限がないため、下記は
+    # TODO: 管理者権限がないため、下記も実行できない。
     # sh "dism /online /enable-feature " \
     #    "/featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
     # puts "Reboot after 10secs"
@@ -254,8 +262,14 @@ task distro: :wsl do
       install_option << " --name #{WSL_SETUP[:name]}"
     end
     install_option << " --no-launch"
-    install_option << " --version #{WSL_SETUP[:version]}"
+    # FIXME: version 1 を指定してインストールするのに失敗する場合がある。
+    # install_option << " --version #{WSL_SETUP[:version]}"
     sh "wsl #{install_option}"
+
+    if WSL_SETUP[:version].to_i == 1
+      sh "wsl --set-version #{WSL_SETUP[:name]} 1"
+    end
+
     if WSL_SETUP[:input_user]
       sh "wsl --distribution #{WSL_SETUP[:name]}"
     else
@@ -267,15 +281,24 @@ task distro: :wsl do
   end
 end
 
-task apt: :distro
+task pkg: :distro
 
 desc "Update WSL distribution"
-task update: :apt do
-  wsl_run("apt update -y", env: proxy_env, user: "root")
-  unless WSL_SETUP[:skip_update]
-    wsl_run("apt upgrade -y", env: proxy_env, user: "root")
+task update: :pkg do
+  pkg_mgr = wsl_pkg_mgr
+  case pkg_mgr
+  in "apt"
+    wsl_run("apt update -y", env: proxy_env, user: "root")
+    unless WSL_SETUP[:skip_update]
+      wsl_run("apt upgrade -y", env: proxy_env, user: "root")
+    end
+    wsl_run("apt autoremove -y", env: proxy_env, user: "root")
+  in "dnf"
+    wsl_run("dnf update -y", env: proxy_env, user: "root")
+    wsl_run("dnf autoremove -y", env: proxy_env, user: "root")
+  else
+    raise "Unsupported package manager: #{pkg_mgr}"
   end
-  wsl_run("apt autoremove -y", env: proxy_env, user: "root")
 end
 
 task ansible_playbook: %i[ansible ansible_playbook_root] do
@@ -301,6 +324,12 @@ task ansible_playbook_root: :ansible do
   sh "wsl --terminate #{WSL_SETUP[:name]}"
 end
 
-task ansible: %i[apt update].compact do
-  wsl_run("apt install ansible -y", env: proxy_env, user: "root")
+task ansible: %i[pkg update].compact do
+  pkg_mgr = wsl_pkg_mgr
+  case pkg_mgr
+  in "apt"
+    wsl_run("apt install ansible -y", env: proxy_env, user: "root")
+  in "dnf"
+    wsl_run("dnf install ansible-core -y", env: proxy_env, user: "root")
+  end
 end

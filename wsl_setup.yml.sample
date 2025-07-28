@@ -2,6 +2,7 @@
 wsl_setup:
   # name: (default is same distro)
   # distro: "Ubuntu"
+  # distro: "AlmaLinux-10"
   # version: 2
   # input_user: false
   # require_password: false
