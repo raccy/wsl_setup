@@ -55,8 +55,8 @@ if WSL_SETUP[:proxy]
   end
 end
 
-def run_capture(cmd, encoding: Encoding::UTF_8, exception: false, **opts)
-  stdout, status = Open3.capture2(cmd, binmode: true, **opts)
+def run_capture(cmd, encoding: Encoding::UTF_8, exception: false, **)
+  stdout, status = Open3.capture2(cmd, binmode: true, **)
   if status.success?
     stdout.encode(Encoding.default_internal || Encoding::UTF_8, encoding)
       .gsub(/\R/, "\n")
@@ -88,33 +88,33 @@ def generate_wsl_cmd(cmd, distro: WSL_SETUP[:name], user: nil, cd: nil, env: {})
 end
 # rubocop: enable Naming/MethodParameterName
 
-def wsl_path(path, **opts)
-  wsl_run("wslpath -u \"#{path}\"", capture: true, **opts)
+def wsl_path(path, **)
+  wsl_run("wslpath -u \"#{path}\"", capture: true, **)
     .force_encoding(Encoding::UTF_8).chomp
 end
 
-def wsl_file_read(path, **opts)
+def wsl_file_read(path, **)
   check_path(path)
-  wsl_run("cat -- #{path}", capture: true, **opts)
+  wsl_run("cat -- #{path}", capture: true, **)
 end
 
-def wsl_file_write(path, data, mode: nil, **opts)
+def wsl_file_write(path, data, mode: nil, **)
   check_path(path)
-  wsl_mkdir(File.dirname(path), **opts)
-  wsl_run("tee -- #{path}", capture: true, stdin_data: data, **opts)
+  wsl_mkdir(File.dirname(path), **)
+  wsl_run("tee -- #{path}", capture: true, stdin_data: data, **)
   wsl_chmod(path, mode) if mode
 end
 
-def wsl_file_append(path, data, mode: nil, **opts)
+def wsl_file_append(path, data, mode: nil, **)
   check_path(path)
-  wsl_mkdir(File.dirname(path), **opts)
-  wsl_run("tee -a -- #{path}", capture: true, stdin_data: data, **opts)
+  wsl_mkdir(File.dirname(path), **)
+  wsl_run("tee -a -- #{path}", capture: true, stdin_data: data, **)
   wsl_chmod(path, mode) if mode
 end
 
-def wsl_mkdir(path, mode: nil, **opts)
+def wsl_mkdir(path, mode: nil, **)
   check_path(path)
-  wsl_run("mkdir -p -- #{path}", **opts)
+  wsl_run("mkdir -p -- #{path}", **)
   wsl_chmod(path, mode) if mode
 end
 
@@ -124,8 +124,8 @@ def wsl_chmod(path, mode)
   wsl_run("chmod #{mode} -- #{path}")
 end
 
-def wsl_whoami(**opts)
-  wsl_run("whoami", capture: true, **opts).force_encoding(Encoding::UTF_8).chomp
+def wsl_whoami(**)
+  wsl_run("whoami", capture: true, **).force_encoding(Encoding::UTF_8).chomp
 end
 
 def check_path(path)
@@ -167,7 +167,7 @@ end
 def parse_wsl_list(list)
   list.lines.drop(1).map do |line|
     if (m = /^(.)\s+(\S+)\s+(\S+)\s+(\d)\s*$/.match(line))
-      { default: m[1] == "*", name: m[2], state: m[3], version: m[4].to_i }
+      {default: m[1] == "*", name: m[2], state: m[3], version: m[4].to_i}
     else
       raise "invalid wsl list line: #{line}"
     end
@@ -178,22 +178,22 @@ def get_wsl_registry # rubocop: disable Naming/AccessorMethodName
   list = {}
   open_lxss_registry do |reg|
     reg.each_key do |key, _wtime|
-      if key =~ /^\{[\h-]+\}$/
-        reg.open(key) do |sub|
-          list[sub["DistributionName"]] =
-            { key: key, uid: sub["DefaultUid"], path: sub["BasePath"] }
-        end
+      next unless key =~ /^\{[\h-]+\}$/
+
+      reg.open(key) do |sub|
+        list[sub["DistributionName"]] =
+          {key: key, uid: sub["DefaultUid"], path: sub["BasePath"]}
       end
     end
   end
   list
 end
 
-def open_lxss_registry(subkey = nil, mode: "r", &block)
+def open_lxss_registry(subkey = nil, mode: "r", &)
   key = 'Software\Microsoft\Windows\CurrentVersion\Lxss'
   key += "\\#{subkey}" if subkey
   desired = calc_mask(mode)
-  Win32::Registry::HKEY_CURRENT_USER.open(key, desired, &block)
+  Win32::Registry::HKEY_CURRENT_USER.open(key, desired, &)
 end
 
 def calc_mask(mode)
@@ -238,7 +238,7 @@ task :wsl do
     # puts "Reboot after 10secs"
     # sh "shutdown /r /t 10 /c \"Reboot for fuature installing for wsl1.\""
     puts "WSL1 を使用するには、\"Linux 用 Windows サブシステム\" オプション " \
-      "コンポーネントを有効にしてください。"
+         "コンポーネントを有効にしてください。"
     exit # no return
   end
 end
@@ -272,7 +272,9 @@ task apt: :distro
 desc "Update WSL distribution"
 task update: :apt do
   wsl_run("apt update -y", env: proxy_env, user: "root")
-  wsl_run("apt upgrade -y", env: proxy_env, user: "root") unless WSL_SETUP[:skip_update]
+  unless WSL_SETUP[:skip_update]
+    wsl_run("apt upgrade -y", env: proxy_env, user: "root")
+  end
   wsl_run("apt autoremove -y", env: proxy_env, user: "root")
 end
 
