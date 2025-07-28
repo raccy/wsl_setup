@@ -331,5 +331,10 @@ task ansible: %i[pkg update].compact do
     wsl_run("apt install ansible -y", env: proxy_env, user: "root")
   in "dnf"
     wsl_run("dnf install ansible-core -y", env: proxy_env, user: "root")
+    %w[community.general community.mysql community.postgresql]
+      .each do |collection|
+      wsl_run("ansible-galaxy collection install #{collection}",
+        env: proxy_env, user: "root")
+    end
   end
 end

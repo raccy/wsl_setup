@@ -1,3 +1,14 @@
+- name: Get all groups
+  ansible.builtin.getent:
+    database: group
+  when: ansible_facts.getent_group is not defined
+
+- name: Filter user_groups
+  ansible.builtin.set_fact:
+    user_groups: >-
+      {{ ansible_facts.getent_group | dict2items | map(attribute='key') | list
+        | intersect(user_groups) }}
+
 - name: Add default group
   become: true
   ansible.builtin.group:

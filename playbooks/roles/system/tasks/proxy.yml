@@ -17,3 +17,26 @@
     group: root
     mode: '0644'
   loop: '{{ system_proxy_etc_files }}'
+
+- name: Copy proxy setting for apt
+  ansible.builtin.template:
+    src: 'apt/apt.conf.d/90curtin-aptproxy.j2'
+    dest: '/etc/apt/apt.conf.d/90curtin-aptproxy'
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_pkg_mgr == "apt"
+
+- name: Insert timeout in dnf.conf for dnf
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/dnf.conf
+    regexp: '^timeout=.*$'
+    line: 'timeout=600'
+  when: ansible_pkg_mgr == "dnf"
+
+- name: Insert proxy in dnf.conf for dnf
+  ansible.builtin.lineinfile:
+    path: /etc/dnf/dnf.conf
+    regexp: '^proxy=.*$'
+    line: 'proxy={{ proxy_env.http_proxy }}'
+  when: ansible_pkg_mgr == "dnf"
