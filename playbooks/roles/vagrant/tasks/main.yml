@@ -33,6 +33,13 @@
     update_cache: true
   when: ansible_pkg_mgr == "apt"
 
+- name: Import hashicorp gpg for dnf
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://rpm.releases.hashicorp.com/gpg
+  environment: '{{ proxy_env }}'
+  when: ansible_pkg_mgr == "dnf"
+
 - name: Add hashicorp repository for dnf
   become: true
   ansible.builtin.command:
@@ -40,7 +47,7 @@
       - dnf
       - config-manager
       - --add-repo
-      - https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+      - https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
   changed_when: true
   when: ansible_pkg_mgr == "dnf"
 

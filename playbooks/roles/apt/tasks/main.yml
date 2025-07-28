@@ -4,17 +4,21 @@
     path: '{{ apt_keyrings_dir }}'
     state: directory
     mode: '0755'
-    
+  when: ansible_pkg_mgr == "apt"
+
 - name: Run dpkg --print-architecture
   ansible.builtin.command:
     cmd: dpkg --print-architecture
   changed_when: false
   register: apt_run_dpkg_print_architecture
+  when: ansible_pkg_mgr == "apt"
 
 - name: Set apt_architecture
   ansible.builtin.set_fact:
     apt_architecture: '{{ apt_run_dpkg_print_architecture.stdout }}'
+  when: ansible_pkg_mgr == "apt"
 
 - name: Set apt_release
   ansible.builtin.set_fact:
     apt_release: '{{ ansible_distribution_release }}'
+  when: ansible_pkg_mgr == "apt"
