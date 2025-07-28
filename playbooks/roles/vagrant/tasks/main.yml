@@ -34,6 +34,7 @@
   when: ansible_pkg_mgr == "apt"
 
 - name: Import hashicorp gpg for dnf
+  become: true
   ansible.builtin.rpm_key:
     state: present
     key: https://rpm.releases.hashicorp.com/gpg
